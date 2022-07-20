@@ -11,6 +11,7 @@ import (
 
 	"github.com/firecracker-microvm/firecracker-go-sdk"
 	"github.com/firecracker-microvm/firecracker-go-sdk/client/models"
+	"github.com/google/uuid"
 )
 
 func startVm(ctx context.Context, wg *sync.WaitGroup, socketPath string, kernelImagePath string, rootfsImagePath string) {
@@ -48,6 +49,7 @@ func startVm(ctx context.Context, wg *sync.WaitGroup, socketPath string, kernelI
 			Smt:         firecracker.Bool(true),
 		},
 	}, machineOpts...)
+	m.SetMetadata(vmmCtx, uuid.New().String())
 	if err != nil {
 		log.Fatal(err)
 	}
