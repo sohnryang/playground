@@ -57,6 +57,7 @@ func startVm(ctx context.Context, wg *sync.WaitGroup, socketPath string, kernelI
 				NetworkName: "fcnet",
 				IfName:      "veth0",
 			},
+			AllowMMDS: true,
 		}},
 	}
 	m, err := firecracker.NewMachine(vmmCtx, fcCfg, machineOpts...)
@@ -67,7 +68,8 @@ func startVm(ctx context.Context, wg *sync.WaitGroup, socketPath string, kernelI
 		log.Fatal(err)
 	}
 	m.SetMetadata(vmmCtx, metadata{Uuid: uuid.New().String()})
-	log.Println(fcCfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP)
+	ipAddr := fcCfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP
+	log.Println(ipAddr)
 	defer m.StopVMM()
 	defer wg.Done()
 	<-ctx.Done()
