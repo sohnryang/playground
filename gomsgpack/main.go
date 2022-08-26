@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"time"
 
 	"github.com/vmihailenco/msgpack/v5"
 )
 
 type Account struct {
-	Username     string `msgpack:"username"`
-	PasswordHash string `msgpack:"password_hash"`
-	Email        string `msgpack:"email"`
-	Timestamp    int64  `msgpack:"timestamp"`
+	Username     string    `msgpack:"username"`
+	PasswordHash string    `msgpack:"password_hash"`
+	Email        string    `msgpack:"email"`
+	Timestamp    time.Time `msgpack:"timestamp"`
 }
 
 func main() {
@@ -20,7 +21,7 @@ func main() {
 		Username:     "Alice",
 		PasswordHash: "2aaec9f2c5195fd325826cb6b666901030b96749",
 		Email:        "alice@bob.com",
-		Timestamp:    1661478103018997000,
+		Timestamp:    time.Unix(0, 0),
 	}
 	b, err := msgpack.Marshal(alice)
 	if err != nil {
