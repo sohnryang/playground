@@ -1,4 +1,4 @@
-module github.com/sohnryang/playground/gomsgpackmap
+module github.com/sohnryang/playground/golang/msgpackmap
 
 go 1.19
 
