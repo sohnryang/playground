@@ -54,6 +54,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--device", default="cpu", type=str)
     parser.add_argument("-o", "--output", default="model_state.dat", type=str)
+    parser.add_argument("-e", "--epochs", default=5, type=int)
     args = parser.parse_args()
 
     device = args.device
@@ -62,7 +63,7 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
 
-    epochs = 5
+    epochs = args.epochs
     for t in range(epochs):
         print(f"Epoch {t}")
         train(train_dataloader, model, loss_fn, optimizer)
