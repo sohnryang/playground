@@ -47,7 +47,7 @@ def test(dataloader: DataLoader, model: nn.Module, loss_fn: nn.Module):
     test_loss /= num_batches
     correct /= size
     print("Test error:")
-    print(f"acc={(100*correct):>0.1f}%, loss={test_loss:>8f}")
+    print(f"acc={(100*correct):>0.1f}%, loss={test_loss:>8f}\n")
 
 
 if __name__ == "__main__":
