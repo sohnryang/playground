@@ -26,5 +26,17 @@ $$
 여기서는 행렬이 나오기 때문에, 좀 더 명시적으로 작성하면 다음과 같다.
 
 $$
-\begin{pmatrix} z_1 \\ z_2 \end{pmatrix} = \begin{pmatrix} a_11 & a_12 \\ a_21 & a_22 \end{pmatrix}\begin{pmatrix} x_1 \\ x_2 \end{pmatrix} + \begin{pmatrix} b_1 \\ b_2 \end{pmatrix}
+\begin{pmatrix}
+  z_1 \\
+  z_2
+\end{pmatrix} = \begin{pmatrix}
+  a_{11} & a_{12} \\
+  a_{21} & a_{22}
+\end{pmatrix} \begin{pmatrix}
+  x_1 \\
+  x_2
+\end{pmatrix} + \begin{pmatrix}
+  b_1 \\
+  b_2
+\end{pmatrix}
 $$
