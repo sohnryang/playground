@@ -1,4 +1,4 @@
-module github.com/sohnryang/playground/fcmvmwithcontext
+module github.com/sohnryang/playground/firecracker/mvmcontext
 
 go 1.18
 
