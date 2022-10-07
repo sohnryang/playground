@@ -11,7 +11,12 @@ import (
 
 	"github.com/firecracker-microvm/firecracker-go-sdk"
 	"github.com/firecracker-microvm/firecracker-go-sdk/client/models"
+	"github.com/google/uuid"
 )
+
+type metadata struct {
+	Uuid string `json:"uuid"`
+}
 
 func startVm(ctx context.Context, wg *sync.WaitGroup, socketPath string, kernelImagePath string, rootfsImagePath string) {
 	vmmCtx, vmmCancel := context.WithCancel(ctx)
@@ -31,7 +36,7 @@ func startVm(ctx context.Context, wg *sync.WaitGroup, socketPath string, kernelI
 		Build(ctx)
 	machineOpts = append(machineOpts, firecracker.WithProcessRunner(cmd))
 
-	m, err := firecracker.NewMachine(vmmCtx, firecracker.Config{
+	fcCfg := firecracker.Config{
 		SocketPath:      "/tmp/firecracker.socket",
 		KernelImagePath: kernelImagePath,
 		KernelArgs:      "ro console=ttyS0 noapic reboot=k panic=1 pci=off nomodules",
@@ -47,15 +52,24 @@ func startVm(ctx context.Context, wg *sync.WaitGroup, socketPath string, kernelI
 			MemSizeMib:  firecracker.Int64(1024),
 			Smt:         firecracker.Bool(true),
 		},
-	}, machineOpts...)
+		NetworkInterfaces: []firecracker.NetworkInterface{{
+			CNIConfiguration: &firecracker.CNIConfiguration{
+				NetworkName: "fcnet",
+				IfName:      "veth0",
+			},
+			AllowMMDS: true,
+		}},
+	}
+	m, err := firecracker.NewMachine(vmmCtx, fcCfg, machineOpts...)
 	if err != nil {
 		log.Fatal(err)
 	}
-	go func(m *firecracker.Machine) {
-		if err := m.Start(vmmCtx); err != nil {
-			log.Fatal(err)
-		}
-	}(m)
+	if err := m.Start(vmmCtx); err != nil {
+		log.Fatal(err)
+	}
+	m.SetMetadata(vmmCtx, metadata{Uuid: uuid.New().String()})
+	ipAddr := fcCfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP
+	log.Println(ipAddr)
 	defer m.StopVMM()
 	defer wg.Done()
 	<-ctx.Done()
@@ -64,16 +78,18 @@ func startVm(ctx context.Context, wg *sync.WaitGroup, socketPath string, kernelI
 func main() {
 	var (
 		socket, kernelImage, rootfsImage string
+		timeout                          int
 		wg                               sync.WaitGroup
 	)
 	flag.StringVar(&socket, "socket", "/tmp/firecracker.socket", "Path to firecracker socket")
 	flag.StringVar(&kernelImage, "kernel", "vmlinux.bin", "Path to kernel image")
 	flag.StringVar(&rootfsImage, "rootfs", "rootfs.ext4", "Path to rootfs image")
+	flag.IntVar(&timeout, "timeout", 5, "VM termination timeout in seconds")
 	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	log.Println("Started a 10-second timer.")
-	timer := time.NewTimer(10 * time.Second)
+	log.Printf("Timer started: %d seconds", timeout)
+	timer := time.NewTimer(time.Duration(timeout) * time.Second)
 
 	log.Println("Starting a FC MVM...")
 	wg.Add(1)
