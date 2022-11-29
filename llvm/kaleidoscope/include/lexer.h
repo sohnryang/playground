@@ -13,6 +13,7 @@ enum class TokenKind {
   kNumber,
   kMisc,
 };
+typedef std::pair<TokenKind, std::string> Token;
 
 class Lexer {
 private:

@@ -5,7 +5,7 @@
 
 Lexer::Lexer(std::streambuf *sb) : last_char(' '), stream(sb) {}
 
-std::pair<TokenKind, std::string> Lexer::get_token() {
+Token Lexer::get_token() {
   while (std::isspace(last_char))
     last_char = stream.get();
   if (std::isalpha(last_char)) {
