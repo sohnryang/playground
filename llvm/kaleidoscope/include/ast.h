@@ -10,12 +10,12 @@ public:
   virtual ~ExprNode() = default;
 };
 
-class NumberExprNode : public ExprNode {
+template <typename T> class LiteralExprNode : public ExprNode {
 private:
-  int value;
+  T value;
 
 public:
-  NumberExprNode(int value) : value(value) {}
+  LiteralExprNode(T value) : value(value) {}
 };
 
 class VariableExprNode : public ExprNode {
