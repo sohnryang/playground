@@ -14,6 +14,10 @@ message(STATUS "Found Boost ${Boost_VERSION}")
 add_library(Lexer lexer.cpp)
 target_include_directories(Lexer PRIVATE "${PROJECT_SOURCE_DIR}/include")
 
+add_library(Parser ast.cpp parser.cpp)
+target_include_directories(Lexer PRIVATE "${PROJECT_SOURCE_DIR}/include")
+target_link_libraries(Parser PRIVATE Parser)
+
 add_executable(kalc kalc.cpp)
 target_include_directories(kalc PRIVATE "${PROJECT_SOURCE_DIR}/include" PRIVATE "${Boost_INCLUDE_DIRS}")
 target_link_libraries(kalc PRIVATE Lexer PRIVATE ${Boost_LIBRARIES})
