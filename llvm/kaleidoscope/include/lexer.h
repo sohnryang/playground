@@ -10,7 +10,8 @@ enum class TokenKind {
   kDef,
   kExtern,
   kIdentifier,
-  kNumber,
+  kInt,
+  kFloat,
   kMisc,
 };
 typedef std::pair<TokenKind, std::string> Token;

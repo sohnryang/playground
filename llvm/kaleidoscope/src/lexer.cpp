@@ -25,7 +25,9 @@ Token Lexer::get_token() {
       num_str += last_char;
       last_char = stream.get();
     } while (std::isdigit(last_char) || last_char == '.');
-    return {TokenKind::kNumber, num_str};
+    if (num_str.find('.') != std::string::npos)
+      return {TokenKind::kFloat, num_str};
+    return {TokenKind::kInt, num_str};
   }
 
   if (last_char == '#') {
