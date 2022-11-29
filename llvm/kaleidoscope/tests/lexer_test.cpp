@@ -27,4 +27,5 @@ TEST(LexerTest, FunctionDef) {
             std::make_pair(TokenKind::kMisc, std::string(")")));
   EXPECT_EQ(lexer.get_token(),
             std::make_pair(TokenKind::kNumber, std::string("0")));
+  delete sb;
 }
