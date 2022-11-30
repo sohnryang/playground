@@ -15,7 +15,7 @@ private:
   T value;
 
 public:
-  LiteralExprNode(T value) : value(value) {}
+  LiteralExprNode(T value);
 };
 
 class VariableExprNode : public ExprNode {
@@ -23,7 +23,7 @@ private:
   std::string name;
 
 public:
-  VariableExprNode(const std::string &name) : name(name) {}
+  VariableExprNode(const std::string &name);
 };
 
 class BinaryExprNode : public ExprNode {
@@ -33,8 +33,7 @@ private:
 
 public:
   BinaryExprNode(std::string op, std::unique_ptr<ExprNode> lhs,
-                 std::unique_ptr<ExprNode> rhs)
-      : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
+                 std::unique_ptr<ExprNode> rhs);
 };
 
 class CallExprNode : public ExprNode {
@@ -44,8 +43,7 @@ private:
 
 public:
   CallExprNode(const std::string &callee,
-               std::vector<std::unique_ptr<ExprNode>> args)
-      : callee(callee), args(std::move(args)) {}
+               std::vector<std::unique_ptr<ExprNode>> args);
 };
 
 class PrototypeNode {
@@ -54,9 +52,8 @@ private:
   std::vector<std::string> args;
 
 public:
-  PrototypeNode(const std::string &name, std::vector<std::string> args)
-      : name(name), args(std::move(args)) {}
-  const std::string &get_name() const { return name; }
+  PrototypeNode(const std::string &name, std::vector<std::string> args);
+  const std::string &get_name() const;
 };
 
 class FunctionNode {
@@ -66,6 +63,5 @@ private:
 
 public:
   FunctionNode(std::unique_ptr<PrototypeNode> proto,
-               std::unique_ptr<ExprNode> func_body)
-      : proto(std::move(proto)), func_body(std::move(func_body)) {}
+               std::unique_ptr<ExprNode> func_body);
 };

@@ -14,7 +14,7 @@ message(STATUS "Found Boost ${Boost_VERSION}")
 add_library(Lexer lexer.cpp)
 target_include_directories(Lexer PRIVATE "${PROJECT_SOURCE_DIR}/include")
 
-add_library(Parser parser.cpp)
+add_library(Parser parser.cpp ast.cpp)
 target_include_directories(Parser PRIVATE "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(Parser PRIVATE Lexer)
 
