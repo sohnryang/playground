@@ -32,3 +32,10 @@ TEST(ParserTest, Expr) {
   EXPECT_NO_THROW(parser.parse_expr());
   delete sb;
 }
+
+TEST(ParserTest, ParenExpr) {
+  auto sb = new std::stringbuf("(a + b)*(a + b)");
+  Parser parser(sb);
+  EXPECT_NO_THROW(parser.parse_paren_expr());
+  delete sb;
+}
