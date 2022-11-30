@@ -29,8 +29,8 @@ std::unique_ptr<ExprNode> Parser::parse_int() {
 }
 
 std::unique_ptr<ExprNode> Parser::parse_float() {
-  auto node =
-      std::make_unique<LiteralExprNode<float>>(std::stod(current_token.second));
+  auto node = std::make_unique<LiteralExprNode<double>>(
+      std::stod(current_token.second));
   next_token();
   return std::move(node);
 }
