@@ -28,11 +28,11 @@ public:
 
 class BinaryExprNode : public ExprNode {
 private:
-  char op;
+  std::string op;
   std::unique_ptr<ExprNode> lhs, rhs;
 
 public:
-  BinaryExprNode(char op, std::unique_ptr<ExprNode> lhs,
+  BinaryExprNode(std::string op, std::unique_ptr<ExprNode> lhs,
                  std::unique_ptr<ExprNode> rhs)
       : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 };
