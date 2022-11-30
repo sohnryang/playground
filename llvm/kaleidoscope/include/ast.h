@@ -48,24 +48,24 @@ public:
       : callee(callee), args(std::move(args)) {}
 };
 
-class PrototypeExprNode : public ExprNode {
+class PrototypeNode {
 private:
   std::string name;
   std::vector<std::string> args;
 
 public:
-  PrototypeExprNode(const std::string &name, std::vector<std::string> args)
+  PrototypeNode(const std::string &name, std::vector<std::string> args)
       : name(name), args(std::move(args)) {}
   const std::string &get_name() const { return name; }
 };
 
-class FunctionExprNode : public ExprNode {
+class FunctionNode {
 private:
-  std::unique_ptr<PrototypeExprNode> proto;
+  std::unique_ptr<PrototypeNode> proto;
   std::unique_ptr<ExprNode> func_body;
 
 public:
-  FunctionExprNode(std::unique_ptr<PrototypeExprNode> proto,
-                   std::unique_ptr<ExprNode> func_body)
+  FunctionNode(std::unique_ptr<PrototypeNode> proto,
+               std::unique_ptr<ExprNode> func_body)
       : proto(std::move(proto)), func_body(std::move(func_body)) {}
 };
