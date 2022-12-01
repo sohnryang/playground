@@ -1,7 +1,6 @@
 #include <lexer.h>
 
 #include <cctype>
-#include <string>
 
 Lexer::Lexer(std::streambuf *sb) : last_char(' '), stream(sb) {}
 
