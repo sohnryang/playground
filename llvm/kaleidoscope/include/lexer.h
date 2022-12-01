@@ -18,11 +18,11 @@ typedef std::pair<TokenKind, std::string> Token;
 
 class Lexer {
 private:
-  std::string identifier;
+  std::string identifier, code;
+  std::string::iterator it;
   int last_char;
-  std::istream stream;
 
 public:
-  Lexer(std::streambuf *sb);
+  Lexer(std::string code);
   std::pair<TokenKind, std::string> get_token();
 };

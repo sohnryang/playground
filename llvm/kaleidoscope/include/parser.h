@@ -18,7 +18,7 @@ private:
   int get_prec();
 
 public:
-  Parser(std::streambuf *sb);
+  Parser(std::string code);
   std::unique_ptr<ExprNode> parse_int();
   std::unique_ptr<ExprNode> parse_float();
   std::unique_ptr<ExprNode> parse_expr();

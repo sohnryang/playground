@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <vector>
 
-Parser::Parser(std::streambuf *sb) : lexer(sb) {
+Parser::Parser(std::string code) : lexer(code) {
   binop_prec["<"] = 10;
   binop_prec["+"] = 20;
   binop_prec["-"] = 20;
