@@ -139,8 +139,12 @@ std::unique_ptr<PrototypeNode> Parser::parse_proto() {
   }
   if (current_token.second != ")")
     throw std::logic_error("expected ) in prototype");
+  if (next_token().second != ":")
+    throw std::logic_error("expected : after args");
+  auto return_type = next_token().second;
   next_token();
-  return std::make_unique<PrototypeNode>(func_name, std::move(arg_names));
+  return std::make_unique<PrototypeNode>(func_name, std::move(arg_names),
+                                         return_type);
 }
 
 std::unique_ptr<FunctionNode> Parser::parse_def() {
@@ -159,7 +163,8 @@ std::unique_ptr<FunctionNode> Parser::parse_toplevel_expr() {
   if (expr == nullptr)
     return nullptr;
   auto proto = std::make_unique<PrototypeNode>(
-      "__anon_expr", std::vector<std::pair<std::string, std::string>>());
+      "__anon_expr", std::vector<std::pair<std::string, std::string>>(),
+      "void");
   return std::make_unique<FunctionNode>(std::move(proto), std::move(expr));
 }
 

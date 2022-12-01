@@ -19,7 +19,7 @@ TEST(ParserTest, Float) {
 }
 
 TEST(ParserTest, Prototype) {
-  auto sb = new std::stringbuf("func(a: int, b: double, c: int)");
+  auto sb = new std::stringbuf("func(a: int, b: double, c: int): int");
   Parser parser(sb);
   EXPECT_NO_THROW(parser.parse_proto());
   delete sb;
