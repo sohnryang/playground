@@ -133,8 +133,6 @@ std::unique_ptr<PrototypeNode> Parser::parse_proto() {
     if (next_token().second != ":")
       throw std::logic_error("expected : after arg name");
     auto type_name = next_token().second;
-    if (type_name != "int" && type_name != "double")
-      throw std::logic_error("unknown type");
     arg_names.push_back({var_name, type_name});
     if (next_token().second != ",")
       break;
