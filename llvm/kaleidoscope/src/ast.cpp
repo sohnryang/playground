@@ -13,8 +13,9 @@ CallExprNode::CallExprNode(const std::string &callee,
                            std::vector<std::unique_ptr<ExprNode>> args)
     : callee(callee), args(std::move(args)) {}
 
-PrototypeNode::PrototypeNode(const std::string &name,
-                             std::vector<std::string> args)
+PrototypeNode::PrototypeNode(
+    const std::string &name,
+    std::vector<std::pair<std::string, std::string>> args)
     : name(name), args(std::move(args)) {}
 const std::string &PrototypeNode::get_name() const { return name; }
 

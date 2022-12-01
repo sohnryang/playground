@@ -127,9 +127,18 @@ std::unique_ptr<PrototypeNode> Parser::parse_proto() {
   if (current_token.second != "(")
     throw std::logic_error("expected ( in prototype");
 
-  std::vector<std::string> arg_names;
-  while (next_token().first == TokenKind::kIdentifier)
-    arg_names.push_back(current_token.second);
+  std::vector<std::pair<std::string, std::string>> arg_names;
+  while (next_token().first == TokenKind::kIdentifier) {
+    auto var_name = current_token.second;
+    if (next_token().second != ":")
+      throw std::logic_error("expected : after arg name");
+    auto type_name = next_token().second;
+    if (type_name != "int" && type_name != "double")
+      throw std::logic_error("unknown type");
+    arg_names.push_back({var_name, type_name});
+    if (next_token().second != ",")
+      break;
+  }
   if (current_token.second != ")")
     throw std::logic_error("expected ) in prototype");
   next_token();
@@ -151,8 +160,8 @@ std::unique_ptr<FunctionNode> Parser::parse_toplevel_expr() {
   auto expr = parse_expr();
   if (expr == nullptr)
     return nullptr;
-  auto proto = std::make_unique<PrototypeNode>("__anon_expr",
-                                               std::vector<std::string>());
+  auto proto = std::make_unique<PrototypeNode>(
+      "__anon_expr", std::vector<std::pair<std::string, std::string>>());
   return std::make_unique<FunctionNode>(std::move(proto), std::move(expr));
 }
 

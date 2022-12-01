@@ -49,10 +49,11 @@ public:
 class PrototypeNode {
 private:
   std::string name;
-  std::vector<std::string> args;
+  std::vector<std::pair<std::string, std::string>> args;
 
 public:
-  PrototypeNode(const std::string &name, std::vector<std::string> args);
+  PrototypeNode(const std::string &name,
+                std::vector<std::pair<std::string, std::string>> args);
   const std::string &get_name() const;
 };
 
