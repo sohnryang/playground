@@ -11,7 +11,7 @@ Token Lexer::get_token() {
     last_char = *(it++);
   if (std::isalpha(last_char)) {
     identifier = last_char;
-    while (std::isalnum(last_char = *(it++)))
+    while (std::isalnum(last_char = *(it++)) || last_char == '_')
       identifier += last_char;
     if (identifier == "def")
       return {TokenKind::kDef, identifier};
