@@ -81,6 +81,9 @@ std::unique_ptr<ExprNode> Parser::parse_primary() {
     return parse_int();
   case TokenKind::kFloat:
     return parse_float();
+  case TokenKind::kMisc:
+    if (current_token.second == "(")
+      return parse_paren_expr();
   default:
     throw std::logic_error("unknown token");
   }
