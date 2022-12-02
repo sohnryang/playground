@@ -27,3 +27,16 @@ TEST(LexerTest, FunctionDef) {
   EXPECT_EQ(lexer.get_token(), Token(TokenKind::kInt, "0"));
   EXPECT_EQ(lexer.get_token(), Token(TokenKind::kEof, ""));
 }
+
+TEST(LexerTest, Proto) {
+  Lexer lexer("func(a: int): void");
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kIdentifier, "func"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kMisc, "("));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kIdentifier, "a"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kMisc, ":"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kIdentifier, "int"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kMisc, ")"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kMisc, ":"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kIdentifier, "void"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kEof, ""));
+}
