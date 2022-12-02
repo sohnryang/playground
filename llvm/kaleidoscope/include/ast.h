@@ -16,9 +16,9 @@ class ExprNode {
 public:
   virtual ~ExprNode() = default;
   virtual llvm::Value *
-  codegen(std::shared_ptr<llvm::LLVMContext> context,
-          std::shared_ptr<llvm::Module> module,
-          std::shared_ptr<llvm::IRBuilder<>> builder,
+  codegen(std::unique_ptr<llvm::LLVMContext> &context,
+          std::unique_ptr<llvm::Module> &module,
+          std::unique_ptr<llvm::IRBuilder<>> &builder,
           std::map<std::string, llvm::Value *> &named_values) = 0;
   virtual std::string to_string() = 0;
 };
@@ -30,9 +30,9 @@ private:
 public:
   LiteralExprNode(T value);
   llvm::Value *
-  codegen(std::shared_ptr<llvm::LLVMContext> context,
-          std::shared_ptr<llvm::Module> module,
-          std::shared_ptr<llvm::IRBuilder<>> builder,
+  codegen(std::unique_ptr<llvm::LLVMContext> &context,
+          std::unique_ptr<llvm::Module> &module,
+          std::unique_ptr<llvm::IRBuilder<>> &builder,
           std::map<std::string, llvm::Value *> &named_values) override;
   std::string to_string() override;
 };
@@ -44,9 +44,9 @@ private:
 public:
   VariableExprNode(const std::string &name);
   llvm::Value *
-  codegen(std::shared_ptr<llvm::LLVMContext> context,
-          std::shared_ptr<llvm::Module> module,
-          std::shared_ptr<llvm::IRBuilder<>> builder,
+  codegen(std::unique_ptr<llvm::LLVMContext> &context,
+          std::unique_ptr<llvm::Module> &module,
+          std::unique_ptr<llvm::IRBuilder<>> &builder,
           std::map<std::string, llvm::Value *> &named_values) override;
   std::string to_string() override;
 };
@@ -60,9 +60,9 @@ public:
   BinaryExprNode(std::string op, std::unique_ptr<ExprNode> lhs,
                  std::unique_ptr<ExprNode> rhs);
   llvm::Value *
-  codegen(std::shared_ptr<llvm::LLVMContext> context,
-          std::shared_ptr<llvm::Module> module,
-          std::shared_ptr<llvm::IRBuilder<>> builder,
+  codegen(std::unique_ptr<llvm::LLVMContext> &context,
+          std::unique_ptr<llvm::Module> &module,
+          std::unique_ptr<llvm::IRBuilder<>> &builder,
           std::map<std::string, llvm::Value *> &named_values) override;
   std::string to_string() override;
 };
@@ -76,9 +76,9 @@ public:
   CallExprNode(const std::string &callee,
                std::vector<std::unique_ptr<ExprNode>> args);
   llvm::Value *
-  codegen(std::shared_ptr<llvm::LLVMContext> context,
-          std::shared_ptr<llvm::Module> module,
-          std::shared_ptr<llvm::IRBuilder<>> builder,
+  codegen(std::unique_ptr<llvm::LLVMContext> &context,
+          std::unique_ptr<llvm::Module> &module,
+          std::unique_ptr<llvm::IRBuilder<>> &builder,
           std::map<std::string, llvm::Value *> &named_values) override;
   std::string to_string() override;
 };
@@ -87,9 +87,9 @@ class StatementNode {
 public:
   virtual ~StatementNode() = default;
   virtual llvm::Value *
-  codegen(std::shared_ptr<llvm::LLVMContext> context,
-          std::shared_ptr<llvm::Module> module,
-          std::shared_ptr<llvm::IRBuilder<>> builder,
+  codegen(std::unique_ptr<llvm::LLVMContext> &context,
+          std::unique_ptr<llvm::Module> &module,
+          std::unique_ptr<llvm::IRBuilder<>> &builder,
           std::map<std::string, llvm::Value *> &named_values) = 0;
   virtual std::string to_string() = 0;
 };
@@ -106,9 +106,9 @@ public:
                 std::string return_type);
   const std::string &get_name() const;
   llvm::Function *
-  codegen(std::shared_ptr<llvm::LLVMContext> context,
-          std::shared_ptr<llvm::Module> module,
-          std::shared_ptr<llvm::IRBuilder<>> builder,
+  codegen(std::unique_ptr<llvm::LLVMContext> &context,
+          std::unique_ptr<llvm::Module> &module,
+          std::unique_ptr<llvm::IRBuilder<>> &builder,
           std::map<std::string, llvm::Value *> &named_values) override;
   std::string to_string() override;
 };
@@ -124,9 +124,9 @@ public:
                std::unique_ptr<ExprNode> func_body);
   FunctionNode(std::unique_ptr<PrototypeNode> proto);
   llvm::Function *
-  codegen(std::shared_ptr<llvm::LLVMContext> context,
-          std::shared_ptr<llvm::Module> module,
-          std::shared_ptr<llvm::IRBuilder<>> builder,
+  codegen(std::unique_ptr<llvm::LLVMContext> &context,
+          std::unique_ptr<llvm::Module> &module,
+          std::unique_ptr<llvm::IRBuilder<>> &builder,
           std::map<std::string, llvm::Value *> &named_values) override;
   std::string to_string() override;
 };

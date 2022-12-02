@@ -19,9 +19,9 @@ template <typename T> std::string LiteralExprNode<T>::to_string() {
 
 template <>
 llvm::Value *LiteralExprNode<int>::codegen(
-    std::shared_ptr<llvm::LLVMContext> context,
-    std::shared_ptr<llvm::Module> module,
-    std::shared_ptr<llvm::IRBuilder<>> builder,
+    std::unique_ptr<llvm::LLVMContext> &context,
+    std::unique_ptr<llvm::Module> &module,
+    std::unique_ptr<llvm::IRBuilder<>> &builder,
     std::map<std::string, llvm::Value *> &named_values) {
   return llvm::ConstantInt::get(
       *context, llvm::APInt(32, static_cast<uint64_t>(value), true));
@@ -29,9 +29,9 @@ llvm::Value *LiteralExprNode<int>::codegen(
 
 template <>
 llvm::Value *LiteralExprNode<double>::codegen(
-    std::shared_ptr<llvm::LLVMContext> context,
-    std::shared_ptr<llvm::Module> module,
-    std::shared_ptr<llvm::IRBuilder<>> builder,
+    std::unique_ptr<llvm::LLVMContext> &context,
+    std::unique_ptr<llvm::Module> &module,
+    std::unique_ptr<llvm::IRBuilder<>> &builder,
     std::map<std::string, llvm::Value *> &named_values) {
   return llvm::ConstantFP::get(*context, llvm::APFloat(value));
 }
@@ -39,9 +39,9 @@ llvm::Value *LiteralExprNode<double>::codegen(
 VariableExprNode::VariableExprNode(const std::string &name) : name(name) {}
 
 llvm::Value *
-VariableExprNode::codegen(std::shared_ptr<llvm::LLVMContext> context,
-                          std::shared_ptr<llvm::Module> module,
-                          std::shared_ptr<llvm::IRBuilder<>> builder,
+VariableExprNode::codegen(std::unique_ptr<llvm::LLVMContext> &context,
+                          std::unique_ptr<llvm::Module> &module,
+                          std::unique_ptr<llvm::IRBuilder<>> &builder,
                           std::map<std::string, llvm::Value *> &named_values) {
   auto *val = named_values[name];
   if (val == nullptr)
@@ -58,9 +58,9 @@ BinaryExprNode::BinaryExprNode(std::string op, std::unique_ptr<ExprNode> lhs,
     : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 
 llvm::Value *
-BinaryExprNode::codegen(std::shared_ptr<llvm::LLVMContext> context,
-                        std::shared_ptr<llvm::Module> module,
-                        std::shared_ptr<llvm::IRBuilder<>> builder,
+BinaryExprNode::codegen(std::unique_ptr<llvm::LLVMContext> &context,
+                        std::unique_ptr<llvm::Module> &module,
+                        std::unique_ptr<llvm::IRBuilder<>> &builder,
                         std::map<std::string, llvm::Value *> &named_values) {
   auto lhs_val = lhs->codegen(context, module, builder, named_values),
        rhs_val = rhs->codegen(context, module, builder, named_values);
@@ -91,9 +91,9 @@ CallExprNode::CallExprNode(const std::string &callee,
     : callee(callee), args(std::move(args)) {}
 
 llvm::Value *
-CallExprNode::codegen(std::shared_ptr<llvm::LLVMContext> context,
-                      std::shared_ptr<llvm::Module> module,
-                      std::shared_ptr<llvm::IRBuilder<>> builder,
+CallExprNode::codegen(std::unique_ptr<llvm::LLVMContext> &context,
+                      std::unique_ptr<llvm::Module> &module,
+                      std::unique_ptr<llvm::IRBuilder<>> &builder,
                       std::map<std::string, llvm::Value *> &named_values) {
   llvm::Function *callee_func = module->getFunction(callee);
   if (callee_func == nullptr)
@@ -129,9 +129,9 @@ PrototypeNode::PrototypeNode(
 const std::string &PrototypeNode::get_name() const { return name; }
 
 llvm::Function *
-PrototypeNode::codegen(std::shared_ptr<llvm::LLVMContext> context,
-                       std::shared_ptr<llvm::Module> module,
-                       std::shared_ptr<llvm::IRBuilder<>> builder,
+PrototypeNode::codegen(std::unique_ptr<llvm::LLVMContext> &context,
+                       std::unique_ptr<llvm::Module> &module,
+                       std::unique_ptr<llvm::IRBuilder<>> &builder,
                        std::map<std::string, llvm::Value *> &named_values) {
   std::vector<llvm::Type *> func_arg_types;
   for (auto &arg : args) {
@@ -180,9 +180,9 @@ FunctionNode::FunctionNode(std::unique_ptr<PrototypeNode> proto)
     : proto(std::move(proto)), func_body(nullptr), extern_func(true) {}
 
 llvm::Function *
-FunctionNode::codegen(std::shared_ptr<llvm::LLVMContext> context,
-                      std::shared_ptr<llvm::Module> module,
-                      std::shared_ptr<llvm::IRBuilder<>> builder,
+FunctionNode::codegen(std::unique_ptr<llvm::LLVMContext> &context,
+                      std::unique_ptr<llvm::Module> &module,
+                      std::unique_ptr<llvm::IRBuilder<>> &builder,
                       std::map<std::string, llvm::Value *> &named_values) {
   auto func = module->getFunction(proto->get_name());
   if (func == nullptr)
