@@ -28,3 +28,8 @@ TEST(ParserTest, ParenExpr) {
   Parser parser("(a + b)*(a + b);");
   EXPECT_NO_THROW(parser.parse_paren_expr());
 }
+
+TEST(ParserTest, All) {
+  Parser parser("(a + b)*(a + b);");
+  EXPECT_NO_THROW(parser.parse_all());
+}
