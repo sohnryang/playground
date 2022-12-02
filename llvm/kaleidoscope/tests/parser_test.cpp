@@ -5,36 +5,26 @@
 #include <sstream>
 
 TEST(ParserTest, Int) {
-  auto sb = new std::stringbuf("42");
-  Parser parser(sb);
+  Parser parser("42");
   EXPECT_NO_THROW(parser.parse_int());
-  delete sb;
 }
 
 TEST(ParserTest, Float) {
-  auto sb = new std::stringbuf("2.71828");
-  Parser parser(sb);
+  Parser parser("2.71828");
   EXPECT_NO_THROW(parser.parse_float());
-  delete sb;
 }
 
 TEST(ParserTest, Prototype) {
-  auto sb = new std::stringbuf("func(a: int, b: double, c: int): int");
-  Parser parser(sb);
+  Parser parser("func(a: int, b: double, c: int): int");
   EXPECT_NO_THROW(parser.parse_proto());
-  delete sb;
 }
 
 TEST(ParserTest, Expr) {
-  auto sb = new std::stringbuf("a*a + b*b - c*c");
-  Parser parser(sb);
+  Parser parser("a*a + b*b - c*c");
   EXPECT_NO_THROW(parser.parse_expr());
-  delete sb;
 }
 
 TEST(ParserTest, ParenExpr) {
-  auto sb = new std::stringbuf("(a + b)*(a + b)");
-  Parser parser(sb);
+  Parser parser("(a + b)*(a + b);");
   EXPECT_NO_THROW(parser.parse_paren_expr());
-  delete sb;
 }
