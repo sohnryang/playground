@@ -30,5 +30,5 @@ public:
   std::unique_ptr<PrototypeNode> parse_proto();
   std::unique_ptr<FunctionNode> parse_def();
   std::unique_ptr<FunctionNode> parse_toplevel_expr();
-  std::unique_ptr<PrototypeNode> parse_extern();
+  std::unique_ptr<FunctionNode> parse_extern();
 };

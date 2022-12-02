@@ -97,10 +97,12 @@ class FunctionNode {
 private:
   std::unique_ptr<PrototypeNode> proto;
   std::unique_ptr<ExprNode> func_body;
+  bool extern_func;
 
 public:
   FunctionNode(std::unique_ptr<PrototypeNode> proto,
                std::unique_ptr<ExprNode> func_body);
+  FunctionNode(std::unique_ptr<PrototypeNode> proto);
   llvm::Function *codegen(std::shared_ptr<llvm::LLVMContext> context,
                           std::shared_ptr<llvm::Module> module,
                           std::shared_ptr<llvm::IRBuilder<>> builder,

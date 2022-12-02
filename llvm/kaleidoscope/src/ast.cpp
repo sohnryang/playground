@@ -136,7 +136,11 @@ PrototypeNode::codegen(std::shared_ptr<llvm::LLVMContext> context,
 
 FunctionNode::FunctionNode(std::unique_ptr<PrototypeNode> proto,
                            std::unique_ptr<ExprNode> func_body)
-    : proto(std::move(proto)), func_body(std::move(func_body)) {}
+    : proto(std::move(proto)), func_body(std::move(func_body)),
+      extern_func(false) {}
+
+FunctionNode::FunctionNode(std::unique_ptr<PrototypeNode> proto)
+    : proto(std::move(proto)), func_body(nullptr), extern_func(true) {}
 
 llvm::Function *
 FunctionNode::codegen(std::shared_ptr<llvm::LLVMContext> context,
@@ -148,6 +152,9 @@ FunctionNode::codegen(std::shared_ptr<llvm::LLVMContext> context,
     func = proto->codegen(context, module);
   if (func == nullptr)
     return nullptr;
+
+  if (extern_func)
+    return func;
 
   auto block = llvm::BasicBlock::Create(*context, "entry", func);
   builder->SetInsertPoint(block);

@@ -168,7 +168,9 @@ std::unique_ptr<FunctionNode> Parser::parse_toplevel_expr() {
   return std::make_unique<FunctionNode>(std::move(proto), std::move(expr));
 }
 
-std::unique_ptr<PrototypeNode> Parser::parse_extern() {
+std::unique_ptr<FunctionNode> Parser::parse_extern() {
   next_token();
-  return parse_proto();
+  auto proto = parse_proto();
+  auto func = std::make_unique<FunctionNode>(std::move(proto));
+  return func;
 }
