@@ -30,4 +30,4 @@ target_link_libraries(Parser PUBLIC Lexer PUBLIC ${llvm_libs} PUBLIC fmt::fmt)
 
 add_executable(kalc kalc.cpp)
 target_include_directories(kalc PRIVATE "${PROJECT_SOURCE_DIR}/include" PRIVATE "${Boost_INCLUDE_DIRS}")
-target_link_libraries(kalc PRIVATE Lexer PRIVATE ${Boost_LIBRARIES})
+target_link_libraries(kalc PRIVATE Parser PRIVATE ${Boost_LIBRARIES} PRIVATE ${llvm_libs})
