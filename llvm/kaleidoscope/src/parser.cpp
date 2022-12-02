@@ -177,3 +177,19 @@ std::unique_ptr<FunctionNode> Parser::parse_extern() {
   auto func = std::make_unique<FunctionNode>(std::move(proto));
   return func;
 }
+
+std::vector<std::unique_ptr<StatementNode>> Parser::parse_all() {
+  std::vector<std::unique_ptr<StatementNode>> ast;
+  while (true) {
+    if (current_token.first == TokenKind::kEof)
+      return ast;
+    else if (current_token.second == ";")
+      next_token();
+    else if (current_token.first == TokenKind::kDef)
+      ast.push_back(std::move(parse_def()));
+    else if (current_token.first == TokenKind::kExtern)
+      ast.push_back(std::move(parse_extern()));
+    else
+      ast.push_back(std::move(parse_toplevel_expr()));
+  }
+}

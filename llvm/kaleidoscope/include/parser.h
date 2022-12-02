@@ -8,6 +8,7 @@
 #include <streambuf>
 #include <string>
 #include <utility>
+#include <vector>
 
 class Parser {
 private:
@@ -31,4 +32,6 @@ public:
   std::unique_ptr<FunctionNode> parse_def();
   std::unique_ptr<FunctionNode> parse_toplevel_expr();
   std::unique_ptr<FunctionNode> parse_extern();
+
+  std::vector<std::unique_ptr<StatementNode>> parse_all();
 };
