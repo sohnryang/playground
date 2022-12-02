@@ -78,7 +78,17 @@ public:
           std::map<std::string, llvm::Value *> &named_values) override;
 };
 
-class PrototypeNode {
+class StatementNode {
+public:
+  virtual ~StatementNode() = default;
+  virtual llvm::Value *
+  codegen(std::shared_ptr<llvm::LLVMContext> context,
+          std::shared_ptr<llvm::Module> module,
+          std::shared_ptr<llvm::IRBuilder<>> builder,
+          std::map<std::string, llvm::Value *> &named_values) = 0;
+};
+
+class PrototypeNode : public StatementNode {
 private:
   std::string name;
   std::string return_type;
@@ -89,11 +99,14 @@ public:
                 std::vector<std::pair<std::string, std::string>> args,
                 std::string return_type);
   const std::string &get_name() const;
-  llvm::Function *codegen(std::shared_ptr<llvm::LLVMContext> context,
-                          std::shared_ptr<llvm::Module> module);
+  llvm::Function *
+  codegen(std::shared_ptr<llvm::LLVMContext> context,
+          std::shared_ptr<llvm::Module> module,
+          std::shared_ptr<llvm::IRBuilder<>> builder,
+          std::map<std::string, llvm::Value *> &named_values) override;
 };
 
-class FunctionNode {
+class FunctionNode : public StatementNode {
 private:
   std::unique_ptr<PrototypeNode> proto;
   std::unique_ptr<ExprNode> func_body;
@@ -103,8 +116,9 @@ public:
   FunctionNode(std::unique_ptr<PrototypeNode> proto,
                std::unique_ptr<ExprNode> func_body);
   FunctionNode(std::unique_ptr<PrototypeNode> proto);
-  llvm::Function *codegen(std::shared_ptr<llvm::LLVMContext> context,
-                          std::shared_ptr<llvm::Module> module,
-                          std::shared_ptr<llvm::IRBuilder<>> builder,
-                          std::map<std::string, llvm::Value *> &named_values);
+  llvm::Function *
+  codegen(std::shared_ptr<llvm::LLVMContext> context,
+          std::shared_ptr<llvm::Module> module,
+          std::shared_ptr<llvm::IRBuilder<>> builder,
+          std::map<std::string, llvm::Value *> &named_values) override;
 };

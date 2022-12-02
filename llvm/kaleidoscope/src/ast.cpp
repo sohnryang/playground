@@ -105,7 +105,9 @@ const std::string &PrototypeNode::get_name() const { return name; }
 
 llvm::Function *
 PrototypeNode::codegen(std::shared_ptr<llvm::LLVMContext> context,
-                       std::shared_ptr<llvm::Module> module) {
+                       std::shared_ptr<llvm::Module> module,
+                       std::shared_ptr<llvm::IRBuilder<>> builder,
+                       std::map<std::string, llvm::Value *> &named_values) {
   std::vector<llvm::Type *> func_arg_types;
   for (auto &arg : args) {
     if (arg.second == "int")
@@ -149,7 +151,7 @@ FunctionNode::codegen(std::shared_ptr<llvm::LLVMContext> context,
                       std::map<std::string, llvm::Value *> &named_values) {
   auto func = module->getFunction(proto->get_name());
   if (func == nullptr)
-    func = proto->codegen(context, module);
+    func = proto->codegen(context, module, builder, named_values);
   if (func == nullptr)
     return nullptr;
 
