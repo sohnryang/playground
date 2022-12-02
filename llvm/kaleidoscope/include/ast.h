@@ -20,6 +20,7 @@ public:
           std::shared_ptr<llvm::Module> module,
           std::shared_ptr<llvm::IRBuilder<>> builder,
           std::map<std::string, llvm::Value *> &named_values) = 0;
+  virtual std::string to_string() = 0;
 };
 
 template <typename T> class LiteralExprNode : public ExprNode {
@@ -33,6 +34,7 @@ public:
           std::shared_ptr<llvm::Module> module,
           std::shared_ptr<llvm::IRBuilder<>> builder,
           std::map<std::string, llvm::Value *> &named_values) override;
+  std::string to_string() override;
 };
 
 class VariableExprNode : public ExprNode {
@@ -46,6 +48,7 @@ public:
           std::shared_ptr<llvm::Module> module,
           std::shared_ptr<llvm::IRBuilder<>> builder,
           std::map<std::string, llvm::Value *> &named_values) override;
+  std::string to_string() override;
 };
 
 class BinaryExprNode : public ExprNode {
@@ -61,6 +64,7 @@ public:
           std::shared_ptr<llvm::Module> module,
           std::shared_ptr<llvm::IRBuilder<>> builder,
           std::map<std::string, llvm::Value *> &named_values) override;
+  std::string to_string() override;
 };
 
 class CallExprNode : public ExprNode {
@@ -76,6 +80,7 @@ public:
           std::shared_ptr<llvm::Module> module,
           std::shared_ptr<llvm::IRBuilder<>> builder,
           std::map<std::string, llvm::Value *> &named_values) override;
+  std::string to_string() override;
 };
 
 class StatementNode {
@@ -86,6 +91,7 @@ public:
           std::shared_ptr<llvm::Module> module,
           std::shared_ptr<llvm::IRBuilder<>> builder,
           std::map<std::string, llvm::Value *> &named_values) = 0;
+  virtual std::string to_string() = 0;
 };
 
 class PrototypeNode : public StatementNode {
@@ -104,6 +110,7 @@ public:
           std::shared_ptr<llvm::Module> module,
           std::shared_ptr<llvm::IRBuilder<>> builder,
           std::map<std::string, llvm::Value *> &named_values) override;
+  std::string to_string() override;
 };
 
 class FunctionNode : public StatementNode {
@@ -121,4 +128,5 @@ public:
           std::shared_ptr<llvm::Module> module,
           std::shared_ptr<llvm::IRBuilder<>> builder,
           std::map<std::string, llvm::Value *> &named_values) override;
+  std::string to_string() override;
 };
