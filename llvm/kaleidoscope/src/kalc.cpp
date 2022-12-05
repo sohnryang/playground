@@ -9,11 +9,6 @@
 #include <sstream>
 #include <string>
 
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/Module.h>
-#include <llvm/Support/raw_os_ostream.h>
-
 #include <boost/exception/all.hpp>
 #include <boost/program_options.hpp>
 
@@ -63,16 +58,6 @@ int main(int argc, char *argv[]) {
       std::cout << root->to_string() << std::endl;
   if (!vmap.count("emit-ir"))
     return 0;
-
-  auto context = std::make_unique<llvm::LLVMContext>();
-  auto module = std::make_unique<llvm::Module>("Kaleidoscope", *context);
-  auto builder = std::make_unique<llvm::IRBuilder<>>(*context);
-  std::map<std::string, llvm::Value *> named_values;
-  for (auto &subtree_root : ast)
-    subtree_root->codegen(context, module, builder, named_values);
-  std::ofstream outfile(vmap["emit-ir"].as<std::string>());
-  llvm::raw_os_ostream outstream(outfile);
-  module->print(outstream, nullptr);
 
   return 0;
 }

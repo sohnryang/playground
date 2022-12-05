@@ -5,11 +5,6 @@
 
 #include <fmt/core.h>
 
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/Constants.h>
-#include <llvm/IR/Type.h>
-#include <llvm/IR/Verifier.h>
-
 template <typename T>
 LiteralExprNode<T>::LiteralExprNode(T value) : value(value) {}
 
@@ -17,37 +12,7 @@ template <typename T> std::string LiteralExprNode<T>::to_string() {
   return fmt::format("Literal({})", value);
 }
 
-template <>
-llvm::Value *LiteralExprNode<int>::codegen(
-    std::unique_ptr<llvm::LLVMContext> &context,
-    std::unique_ptr<llvm::Module> &module,
-    std::unique_ptr<llvm::IRBuilder<>> &builder,
-    std::map<std::string, llvm::Value *> &named_values) {
-  return llvm::ConstantInt::get(
-      *context, llvm::APInt(32, static_cast<uint64_t>(value), true));
-}
-
-template <>
-llvm::Value *LiteralExprNode<double>::codegen(
-    std::unique_ptr<llvm::LLVMContext> &context,
-    std::unique_ptr<llvm::Module> &module,
-    std::unique_ptr<llvm::IRBuilder<>> &builder,
-    std::map<std::string, llvm::Value *> &named_values) {
-  return llvm::ConstantFP::get(*context, llvm::APFloat(value));
-}
-
 VariableExprNode::VariableExprNode(const std::string &name) : name(name) {}
-
-llvm::Value *
-VariableExprNode::codegen(std::unique_ptr<llvm::LLVMContext> &context,
-                          std::unique_ptr<llvm::Module> &module,
-                          std::unique_ptr<llvm::IRBuilder<>> &builder,
-                          std::map<std::string, llvm::Value *> &named_values) {
-  auto *val = named_values[name];
-  if (val == nullptr)
-    throw std::logic_error("unknown variable name");
-  return val;
-}
 
 std::string VariableExprNode::to_string() {
   return fmt::format("Variable({})", name);
@@ -57,30 +22,6 @@ BinaryExprNode::BinaryExprNode(std::string op, std::unique_ptr<ExprNode> lhs,
                                std::unique_ptr<ExprNode> rhs)
     : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 
-llvm::Value *
-BinaryExprNode::codegen(std::unique_ptr<llvm::LLVMContext> &context,
-                        std::unique_ptr<llvm::Module> &module,
-                        std::unique_ptr<llvm::IRBuilder<>> &builder,
-                        std::map<std::string, llvm::Value *> &named_values) {
-  auto lhs_val = lhs->codegen(context, module, builder, named_values),
-       rhs_val = rhs->codegen(context, module, builder, named_values);
-  if (lhs_val == nullptr || rhs_val == nullptr)
-    return nullptr;
-
-  if (op == "+")
-    return builder->CreateAdd(lhs_val, rhs_val);
-  else if (op == "-")
-    return builder->CreateSub(lhs_val, rhs_val);
-  else if (op == "*")
-    return builder->CreateMul(lhs_val, rhs_val);
-  else if (op == "<") {
-    // TODO: support int compare
-    lhs_val = builder->CreateFCmpULT(lhs_val, rhs_val);
-    return builder->CreateUIToFP(lhs_val, llvm::Type::getDoubleTy(*context));
-  } else
-    throw std::logic_error("invalid binary operator");
-}
-
 std::string BinaryExprNode::to_string() {
   return fmt::format("BinaryExpr({}, {}, {})", op, lhs->to_string(),
                      rhs->to_string());
@@ -89,27 +30,6 @@ std::string BinaryExprNode::to_string() {
 CallExprNode::CallExprNode(const std::string &callee,
                            std::vector<std::unique_ptr<ExprNode>> args)
     : callee(callee), args(std::move(args)) {}
-
-llvm::Value *
-CallExprNode::codegen(std::unique_ptr<llvm::LLVMContext> &context,
-                      std::unique_ptr<llvm::Module> &module,
-                      std::unique_ptr<llvm::IRBuilder<>> &builder,
-                      std::map<std::string, llvm::Value *> &named_values) {
-  llvm::Function *callee_func = module->getFunction(callee);
-  if (callee_func == nullptr)
-    throw std::logic_error("unknown function");
-
-  if (callee_func->arg_size() != args.size())
-    throw std::logic_error("argument count mismatch");
-
-  std::vector<llvm::Value *> argv;
-  for (auto &arg : args) {
-    argv.push_back(arg->codegen(context, module, builder, named_values));
-    if (argv.back() == nullptr)
-      throw std::logic_error("codegen failed for arg");
-  }
-  return builder->CreateCall(callee_func, argv);
-}
 
 std::string CallExprNode::to_string() {
   std::string arg_str;
@@ -128,39 +48,6 @@ PrototypeNode::PrototypeNode(
     : name(name), args(std::move(args)), return_type(return_type) {}
 const std::string &PrototypeNode::get_name() const { return name; }
 
-llvm::Function *
-PrototypeNode::codegen(std::unique_ptr<llvm::LLVMContext> &context,
-                       std::unique_ptr<llvm::Module> &module,
-                       std::unique_ptr<llvm::IRBuilder<>> &builder,
-                       std::map<std::string, llvm::Value *> &named_values) {
-  std::vector<llvm::Type *> func_arg_types;
-  for (auto &arg : args) {
-    if (arg.second == "int")
-      func_arg_types.push_back(llvm::Type::getInt32Ty(*context));
-    else if (arg.second == "float")
-      func_arg_types.push_back(llvm::Type::getDoubleTy(*context));
-    else
-      throw std::logic_error("unknown arg type");
-  }
-  llvm::Type *func_return_type;
-  if (return_type == "int")
-    func_return_type = llvm::Type::getInt32Ty(*context);
-  else if (return_type == "float")
-    func_return_type = llvm::Type::getDoubleTy(*context);
-  else if (return_type == "void")
-    func_return_type = llvm::Type::getVoidTy(*context);
-  else
-    throw std::logic_error("unknown return type");
-  auto func_type =
-      llvm::FunctionType::get(func_return_type, func_arg_types, false);
-  auto func = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage,
-                                     name, module.get());
-  auto it = args.begin();
-  for (auto &arg : func->args())
-    arg.setName((it++)->first);
-  return func;
-}
-
 std::string PrototypeNode::to_string() {
   std::string arg_str;
   for (auto &arg : args) {
@@ -178,37 +65,6 @@ FunctionNode::FunctionNode(std::unique_ptr<PrototypeNode> proto,
 
 FunctionNode::FunctionNode(std::unique_ptr<PrototypeNode> proto)
     : proto(std::move(proto)), func_body(nullptr), extern_func(true) {}
-
-llvm::Function *
-FunctionNode::codegen(std::unique_ptr<llvm::LLVMContext> &context,
-                      std::unique_ptr<llvm::Module> &module,
-                      std::unique_ptr<llvm::IRBuilder<>> &builder,
-                      std::map<std::string, llvm::Value *> &named_values) {
-  auto func = module->getFunction(proto->get_name());
-  if (func == nullptr)
-    func = proto->codegen(context, module, builder, named_values);
-  if (func == nullptr)
-    return nullptr;
-
-  if (extern_func)
-    return func;
-
-  auto block = llvm::BasicBlock::Create(*context, "entry", func);
-  builder->SetInsertPoint(block);
-
-  named_values.clear();
-  for (auto &arg : func->args())
-    named_values[std::string(arg.getName())] = &arg;
-
-  auto ret = func_body->codegen(context, module, builder, named_values);
-  if (ret == nullptr) {
-    func->eraseFromParent();
-    return nullptr;
-  }
-  builder->CreateRet(ret);
-  llvm::verifyFunction(*func);
-  return func;
-}
 
 std::string FunctionNode::to_string() {
   if (extern_func)
