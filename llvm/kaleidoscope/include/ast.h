@@ -2,85 +2,72 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
-class ExprNode {
-public:
-  virtual ~ExprNode() = default;
-  virtual std::string to_string() = 0;
-};
-
-template <typename T> class LiteralExprNode : public ExprNode {
-private:
+template <typename T> struct LiteralExprNode {
   T value;
 
-public:
+  LiteralExprNode(LiteralExprNode<T> &&) = default;
   LiteralExprNode(T value);
-  std::string to_string() override;
+  LiteralExprNode<T> &operator=(LiteralExprNode<T> &&) = default;
 };
 
-class VariableExprNode : public ExprNode {
-private:
+struct VariableExprNode {
   std::string name;
 
-public:
+  VariableExprNode(VariableExprNode &&) = default;
   VariableExprNode(const std::string &name);
-  std::string to_string() override;
+  VariableExprNode &operator=(VariableExprNode &&) = default;
 };
 
-class BinaryExprNode : public ExprNode {
-private:
+using ExprNode =
+    std::variant<LiteralExprNode<int>, LiteralExprNode<double>,
+                 VariableExprNode, std::unique_ptr<struct BinaryExprNode>,
+                 std::unique_ptr<struct CallExprNode>>;
+
+struct BinaryExprNode {
   std::string op;
-  std::unique_ptr<ExprNode> lhs, rhs;
+  ExprNode lhs, rhs;
 
-public:
-  BinaryExprNode(std::string op, std::unique_ptr<ExprNode> lhs,
-                 std::unique_ptr<ExprNode> rhs);
-  std::string to_string() override;
+  BinaryExprNode(BinaryExprNode &&) = default;
+  BinaryExprNode(const std::string &op, ExprNode lhs, ExprNode rhs);
+  BinaryExprNode &operator=(BinaryExprNode &&) = default;
 };
 
-class CallExprNode : public ExprNode {
-private:
+struct CallExprNode {
   std::string callee;
-  std::vector<std::unique_ptr<ExprNode>> args;
+  std::vector<ExprNode> args;
 
-public:
-  CallExprNode(const std::string &callee,
-               std::vector<std::unique_ptr<ExprNode>> args);
-  std::string to_string() override;
+  CallExprNode(CallExprNode &&) = default;
+  CallExprNode(const std::string &callee, std::vector<ExprNode> args);
+  CallExprNode &operator=(CallExprNode &&) = default;
 };
 
-class StatementNode {
-public:
-  virtual ~StatementNode() = default;
-  virtual std::string to_string() = 0;
-};
-
-class PrototypeNode : public StatementNode {
-private:
+struct PrototypeNode {
   std::string name;
   std::string return_type;
   std::vector<std::pair<std::string, std::string>> args;
 
-public:
+  PrototypeNode(PrototypeNode &&) = default;
   PrototypeNode(const std::string &name,
                 std::vector<std::pair<std::string, std::string>> args,
                 std::string return_type);
-  const std::string &get_name() const;
-  std::string to_string() override;
+  PrototypeNode &operator=(PrototypeNode &&) = default;
 };
 
-class FunctionNode : public StatementNode {
-private:
-  std::unique_ptr<PrototypeNode> proto;
-  std::unique_ptr<ExprNode> func_body;
+struct FunctionNode {
+  PrototypeNode proto;
+  std::optional<ExprNode> func_body;
   bool extern_func;
 
-public:
-  FunctionNode(std::unique_ptr<PrototypeNode> proto,
-               std::unique_ptr<ExprNode> func_body);
-  FunctionNode(std::unique_ptr<PrototypeNode> proto);
-  std::string to_string() override;
+  FunctionNode(FunctionNode &&) = default;
+  FunctionNode(PrototypeNode proto, ExprNode func_body);
+  FunctionNode(PrototypeNode proto);
+  FunctionNode &operator=(FunctionNode &&) = default;
 };
+
+using StatementNode = std::variant<PrototypeNode, FunctionNode>;
