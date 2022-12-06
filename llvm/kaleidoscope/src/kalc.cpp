@@ -1,3 +1,4 @@
+#include <ast_printer.h>
 #include <parser.h>
 
 #include <exception>
@@ -8,6 +9,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <variant>
 
 #include <boost/exception/all.hpp>
 #include <boost/program_options.hpp>
@@ -53,9 +55,11 @@ int main(int argc, char *argv[]) {
   auto parser = Parser(buf.str());
   auto ast = parser.parse_all();
 
-  if (vmap.count("dump-ast"))
+  if (vmap.count("dump-ast")) {
+    ASTPrinter printer;
     for (auto &root : ast)
-      std::cout << root->to_string() << std::endl;
+      std::cout << std::visit(printer, root) << std::endl;
+  }
   if (!vmap.count("emit-ir"))
     return 0;
 
