@@ -21,46 +21,39 @@ int Parser::get_prec() {
 
 Token Parser::next_token() { return current_token = lexer.get_token(); }
 
-std::unique_ptr<ExprNode> Parser::parse_int() {
-  auto node =
-      std::make_unique<LiteralExprNode<int>>(std::stoi(current_token.second));
+LiteralExprNode<int> Parser::parse_int() {
+  LiteralExprNode<int> node(std::stoi(current_token.second));
   next_token();
-  return std::move(node);
+  return node;
 }
 
-std::unique_ptr<ExprNode> Parser::parse_float() {
-  auto node = std::make_unique<LiteralExprNode<double>>(
-      std::stod(current_token.second));
+LiteralExprNode<double> Parser::parse_float() {
+  LiteralExprNode<double> node(std::stod(current_token.second));
   next_token();
-  return std::move(node);
+  return node;
 }
 
-std::unique_ptr<ExprNode> Parser::parse_paren_expr() {
+ExprNode Parser::parse_paren_expr() {
   next_token();
   auto node = parse_expr();
-  if (node == nullptr)
-    return nullptr;
   if (current_token.second != ")")
     throw std::logic_error("expected )");
   next_token();
   return node;
 }
 
-std::unique_ptr<ExprNode> Parser::parse_identifier() {
+ExprNode Parser::parse_identifier() {
   std::string identifier = current_token.second;
   next_token();
   if (current_token.second != "(")
-    return std::make_unique<VariableExprNode>(identifier);
+    return VariableExprNode(identifier);
 
   next_token();
-  std::vector<std::unique_ptr<ExprNode>> args;
+  std::vector<ExprNode> args;
   if (current_token.second != ")") {
     while (true) {
       auto arg = parse_expr();
-      if (arg != nullptr)
-        args.push_back(std::move(arg));
-      else
-        return nullptr;
+      args.push_back(std::move(arg));
 
       if (current_token.second == ")")
         break;
@@ -73,7 +66,7 @@ std::unique_ptr<ExprNode> Parser::parse_identifier() {
   return std::make_unique<CallExprNode>(identifier, std::move(args));
 }
 
-std::unique_ptr<ExprNode> Parser::parse_primary() {
+ExprNode Parser::parse_primary() {
   switch (current_token.first) {
   case TokenKind::kIdentifier:
     return parse_identifier();
@@ -89,8 +82,7 @@ std::unique_ptr<ExprNode> Parser::parse_primary() {
   }
 }
 
-std::unique_ptr<ExprNode>
-Parser::parse_binop_rhs(int expr_prec, std::unique_ptr<ExprNode> lhs) {
+ExprNode Parser::parse_binop_rhs(int expr_prec, ExprNode lhs) {
   while (true) {
     int token_prec = get_prec();
     if (token_prec < expr_prec)
@@ -99,28 +91,21 @@ Parser::parse_binop_rhs(int expr_prec, std::unique_ptr<ExprNode> lhs) {
     auto op = current_token;
     next_token();
 
-    auto rhs = parse_primary();
-    if (rhs == nullptr)
-      return nullptr;
+    auto rhs = std::move(parse_primary());
     int next_prec = get_prec();
-    if (token_prec < next_prec) {
+    if (token_prec < next_prec)
       rhs = parse_binop_rhs(token_prec + 1, std::move(rhs));
-      if (rhs == nullptr)
-        return nullptr;
-    }
     lhs = std::make_unique<BinaryExprNode>(op.second, std::move(lhs),
                                            std::move(rhs));
   }
 }
 
-std::unique_ptr<ExprNode> Parser::parse_expr() {
+ExprNode Parser::parse_expr() {
   auto lhs = parse_primary();
-  if (lhs == nullptr)
-    return nullptr;
   return parse_binop_rhs(0, std::move(lhs));
 }
 
-std::unique_ptr<PrototypeNode> Parser::parse_proto() {
+PrototypeNode Parser::parse_proto() {
   if (current_token.first != TokenKind::kIdentifier)
     throw std::logic_error("expected function name");
 
@@ -146,40 +131,33 @@ std::unique_ptr<PrototypeNode> Parser::parse_proto() {
     throw std::logic_error("expected : after args");
   auto return_type = next_token().second;
   next_token();
-  return std::make_unique<PrototypeNode>(func_name, std::move(arg_names),
-                                         return_type);
+  return PrototypeNode(func_name, std::move(arg_names), return_type);
 }
 
-std::unique_ptr<FunctionNode> Parser::parse_def() {
+FunctionNode Parser::parse_def() {
   next_token();
   auto proto = parse_proto();
-  if (proto == nullptr)
-    return nullptr;
   auto expr = parse_expr();
-  if (expr != nullptr)
-    return std::make_unique<FunctionNode>(std::move(proto), std::move(expr));
-  return nullptr;
+  return FunctionNode(std::move(proto), std::move(expr));
 }
 
-std::unique_ptr<FunctionNode> Parser::parse_toplevel_expr() {
+FunctionNode Parser::parse_toplevel_expr() {
   auto expr = parse_expr();
-  if (expr == nullptr)
-    return nullptr;
-  auto proto = std::make_unique<PrototypeNode>(
-      "__anon_expr", std::vector<std::pair<std::string, std::string>>(),
-      "void");
-  return std::make_unique<FunctionNode>(std::move(proto), std::move(expr));
+  auto proto =
+      PrototypeNode("__anon_expr",
+                    std::vector<std::pair<std::string, std::string>>(), "void");
+  return FunctionNode(std::move(proto), std::move(expr));
 }
 
-std::unique_ptr<FunctionNode> Parser::parse_extern() {
+FunctionNode Parser::parse_extern() {
   next_token();
   auto proto = parse_proto();
-  auto func = std::make_unique<FunctionNode>(std::move(proto));
+  auto func = FunctionNode(std::move(proto));
   return func;
 }
 
-std::vector<std::unique_ptr<StatementNode>> Parser::parse_all() {
-  std::vector<std::unique_ptr<StatementNode>> ast;
+std::vector<StatementNode> Parser::parse_all() {
+  std::vector<StatementNode> ast;
   while (true) {
     if (current_token.first == TokenKind::kEof)
       return ast;
