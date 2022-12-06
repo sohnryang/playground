@@ -2,8 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include <sstream>
-
 TEST(ParserTest, Int) {
   Parser parser("42");
   EXPECT_NO_THROW(parser.parse_int());
