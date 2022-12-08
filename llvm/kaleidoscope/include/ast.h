@@ -70,4 +70,4 @@ struct FunctionNode {
   FunctionNode &operator=(FunctionNode &&) = default;
 };
 
-using StatementNode = std::variant<PrototypeNode, FunctionNode>;
+using StatementNode = std::variant<FunctionNode>;
