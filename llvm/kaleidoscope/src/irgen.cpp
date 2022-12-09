@@ -82,10 +82,17 @@ void IRGen::operator()(FunctionNode &node) {
     globals.erase(arg.first);
   for (auto &arg : func->args())
     global_symbols.erase(std::string(arg.getName()));
-  if (return_type == Type::kInt)
+  switch (return_type) {
+  case Type::kInt:
     builder->CreateRet(builder->CreateFPToSI(ret, builder->getInt32Ty()));
-  else if (return_type == Type::kFloat)
+    break;
+  case Type::kFloat:
     builder->CreateRet(builder->CreateSIToFP(ret, builder->getDoubleTy()));
+    break;
+  case Type::kVoid:
+    builder->CreateRet(nullptr);
+    break;
+  }
   llvm::verifyFunction(*func);
 }
 
