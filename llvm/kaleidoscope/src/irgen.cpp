@@ -61,8 +61,6 @@ void IRGen::operator()(FunctionNode &node) {
     throw std::logic_error(
         fmt::format("unknown return type: {}", node.proto.return_type));
   functions[node.proto.name] = std::make_pair(return_type, arg_types);
-  if (!node.func_body.has_value())
-    return;
   auto func_type =
       llvm::FunctionType::get(return_type_llvm, arg_types_llvm, false);
   auto func = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage,
