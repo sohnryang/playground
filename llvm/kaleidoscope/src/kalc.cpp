@@ -1,4 +1,5 @@
 #include <ast_printer.h>
+#include <irgen.h>
 #include <parser.h>
 
 #include <exception>
@@ -62,6 +63,9 @@ int main(int argc, char *argv[]) {
   }
   if (!vmap.count("emit-ir"))
     return 0;
+
+  IRGen irgen;
+  irgen.codegen(vmap["emit-ir"].as<std::string>(), ast);
 
   return 0;
 }

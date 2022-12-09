@@ -31,6 +31,11 @@ add_library(Parser parser.cpp)
 target_include_directories(Parser PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(Parser PUBLIC Lexer PUBLIC AST)
 
+add_library(IRGen irgen.cpp typechecker.cpp)
+target_include_directories(IRGen PUBLIC "${PROJECT_SOURCE_DIR}/include" PUBLIC "${LLVM_INCLUDE_DIRS}")
+llvm_map_components_to_libnames(llvm_libs core)
+target_link_libraries(IRGen PUBLIC AST PUBLIC ${llvm_libs})
+
 add_executable(kalc kalc.cpp)
 target_include_directories(kalc PRIVATE "${PROJECT_SOURCE_DIR}/include")
-target_link_libraries(kalc PRIVATE Parser PRIVATE ${Boost_LIBRARIES} PRIVATE AST)
+target_link_libraries(kalc PRIVATE ${Boost_LIBRARIES} PRIVATE IRGen PRIVATE AST PRIVATE Parser)
