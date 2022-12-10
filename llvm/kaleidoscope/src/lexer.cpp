@@ -24,6 +24,14 @@ Token Lexer::get_token() {
       return {TokenKind::kDef, identifier};
     if (identifier == "extern")
       return {TokenKind::kExtern, identifier};
+    if (identifier == "if")
+      return {TokenKind::kIf, identifier};
+    if (identifier == "then")
+      return {TokenKind::kThen, identifier};
+    if (identifier == "else")
+      return {TokenKind::kElse, identifier};
+    if (identifier == "for")
+      return {TokenKind::kFor, identifier};
     return {TokenKind::kIdentifier, identifier};
   }
 
