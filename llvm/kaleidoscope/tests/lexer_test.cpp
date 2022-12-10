@@ -40,3 +40,15 @@ TEST(LexerTest, Proto) {
   EXPECT_EQ(lexer.get_token(), Token(TokenKind::kIdentifier, "void"));
   EXPECT_EQ(lexer.get_token(), Token(TokenKind::kEof, ""));
 }
+
+TEST(LexerTest, Operator) {
+  Lexer lexer("1 + 2 * 3 >= 0");
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kInt, "1"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kOp, "+"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kInt, "2"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kOp, "*"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kInt, "3"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kOp, ">="));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kInt, "0"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kEof, ""));
+}
