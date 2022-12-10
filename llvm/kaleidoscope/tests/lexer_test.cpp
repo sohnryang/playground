@@ -53,3 +53,14 @@ TEST(LexerTest, Operator) {
   EXPECT_EQ(lexer.get_token(), Token(TokenKind::kInt, "0"));
   EXPECT_EQ(lexer.get_token(), Token(TokenKind::kEof, ""));
 }
+
+TEST(LexerTest, If) {
+  Lexer lexer("if x < 0 then:");
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kIf, "if"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kIdentifier, "x"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kOp, "<"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kInt, "0"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kThen, "then"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kMisc, ":"));
+  EXPECT_EQ(lexer.get_token(), Token(TokenKind::kEof, ""));
+}

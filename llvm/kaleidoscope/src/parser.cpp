@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include <fmt/core.h>
+
 Parser::Parser(std::string code) : lexer(code) {
   binop_prec["<"] = 10;
   binop_prec["<="] = 10;
@@ -82,6 +84,8 @@ ExprNode Parser::parse_primary() {
   case TokenKind::kMisc:
     if (current_token.second == "(")
       return parse_paren_expr();
+  case TokenKind::kIf:
+    return parse_if();
   default:
     throw std::logic_error("unknown token");
   }
@@ -103,6 +107,23 @@ ExprNode Parser::parse_binop_rhs(int expr_prec, ExprNode lhs) {
     lhs = std::make_unique<BinaryExprNode>(op.second, std::move(lhs),
                                            std::move(rhs));
   }
+}
+
+ExprNode Parser::parse_if() {
+  next_token();
+  auto condition = parse_expr();
+  if (current_token.first != TokenKind::kThen)
+    throw std::logic_error(
+        fmt::format("expected then, got: {}", current_token.second));
+  next_token();
+  auto then_expr = parse_expr();
+  if (current_token.first != TokenKind::kElse)
+    throw std::logic_error(
+        fmt::format("expected else, got: {}", current_token.second));
+  next_token();
+  auto else_expr = parse_expr();
+  return std::make_unique<IfExprNode>(
+      std::move(condition), std::move(then_expr), std::move(else_expr));
 }
 
 ExprNode Parser::parse_expr() {

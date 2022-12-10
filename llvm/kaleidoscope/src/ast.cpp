@@ -18,6 +18,11 @@ CallExprNode::CallExprNode(const std::string &callee,
                            std::vector<ExprNode> args)
     : callee(callee), args(std::move(args)) {}
 
+IfExprNode::IfExprNode(ExprNode condition, ExprNode then_expr,
+                       ExprNode else_expr)
+    : condition(std::move(condition)), then_expr(std::move(then_expr)),
+      else_expr(std::move(else_expr)) {}
+
 PrototypeNode::PrototypeNode(
     const std::string &name,
     std::vector<std::pair<std::string, std::string>> args,

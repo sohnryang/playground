@@ -27,6 +27,7 @@ public:
   ExprNode parse_identifier();
   ExprNode parse_primary();
   ExprNode parse_binop_rhs(int prec, ExprNode lhs);
+  ExprNode parse_if();
   PrototypeNode parse_proto();
   FunctionNode parse_def();
   FunctionNode parse_toplevel_expr();

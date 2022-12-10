@@ -27,7 +27,8 @@ struct VariableExprNode {
 using ExprNode =
     std::variant<LiteralExprNode<int>, LiteralExprNode<double>,
                  VariableExprNode, std::unique_ptr<struct BinaryExprNode>,
-                 std::unique_ptr<struct CallExprNode>>;
+                 std::unique_ptr<struct CallExprNode>,
+                 std::unique_ptr<struct IfExprNode>>;
 
 struct BinaryExprNode {
   std::string op;
@@ -45,6 +46,14 @@ struct CallExprNode {
   CallExprNode(CallExprNode &&) = default;
   CallExprNode(const std::string &callee, std::vector<ExprNode> args);
   CallExprNode &operator=(CallExprNode &&) = default;
+};
+
+struct IfExprNode {
+  ExprNode condition, then_expr, else_expr;
+
+  IfExprNode(IfExprNode &&) = default;
+  IfExprNode(ExprNode condition, ExprNode then_expr, ExprNode else_expr);
+  IfExprNode &operator=(IfExprNode &&) = default;
 };
 
 struct PrototypeNode {

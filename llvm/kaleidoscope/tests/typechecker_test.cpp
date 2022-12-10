@@ -53,3 +53,12 @@ TEST(ExprTypeChecker, Void) {
       "+", LiteralExprNode<int>(42), std::move(call_node));
   EXPECT_THROW(std::visit(checker, binary_node), std::logic_error);
 }
+
+TEST(ExprTypeCheckerTest, If) {
+  ExprNode if_node = std::make_unique<IfExprNode>(
+      std::make_unique<BinaryExprNode>("==", LiteralExprNode<int>(0),
+                                       LiteralExprNode<int>(1)),
+      LiteralExprNode<int>(1), LiteralExprNode<double>(0));
+  ExprTypeChecker checker;
+  EXPECT_EQ(std::visit(checker, if_node), Type::kFloat);
+}

@@ -35,6 +35,13 @@ ASTPrinter::operator()(const std::unique_ptr<CallExprNode> &node) const {
   return fmt::format("CallExpr({}, [{}])", node->callee, arg_str);
 }
 
+std::string
+ASTPrinter::operator()(const std::unique_ptr<IfExprNode> &node) const {
+  return fmt::format("If({}, {}, {})", std::visit(*this, node->condition),
+                     std::visit(*this, node->then_expr),
+                     std::visit(*this, node->else_expr));
+}
+
 std::string ASTPrinter::operator()(const PrototypeNode &node) const {
   std::string arg_str;
   for (auto &arg : node.args) {

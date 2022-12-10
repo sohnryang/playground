@@ -54,6 +54,9 @@ void IRGen::operator()(FunctionNode &node) {
   } else if (node.proto.return_type == "float") {
     return_type = Type::kFloat;
     return_type_llvm = llvm::Type::getDoubleTy(*context);
+  } else if (node.proto.return_type == "bool") {
+    return_type = Type::kBool;
+    return_type_llvm = llvm::Type::getInt1Ty(*context);
   } else if (node.proto.return_type == "void") {
     return_type = Type::kVoid;
     return_type_llvm = llvm::Type::getVoidTy(*context);
@@ -89,8 +92,11 @@ void IRGen::operator()(FunctionNode &node) {
   case Type::kFloat:
     builder->CreateRet(builder->CreateSIToFP(ret, builder->getDoubleTy()));
     break;
+  case Type::kBool:
+    builder->CreateRet(ret);
+    break;
   case Type::kVoid:
-    builder->CreateRet(nullptr);
+    builder->CreateRetVoid();
     break;
   }
   llvm::verifyFunction(*func);
@@ -143,6 +149,36 @@ llvm::Value *IRGen::operator()(std::unique_ptr<BinaryExprNode> &node) {
     if (lhs_type == Type::kInt && rhs_type == Type::kInt)
       return builder->CreateFPToSI(div, builder->getInt32Ty());
     return div;
+  } else if (node->op == "==") {
+    if (lhs_type == Type::kInt && rhs_type == Type::kInt)
+      return builder->CreateICmpEQ(lhs_val, rhs_val);
+    return builder->CreateFCmpOEQ(
+        builder->CreateSIToFP(lhs_val, builder->getDoubleTy()),
+        builder->CreateSIToFP(rhs_val, builder->getDoubleTy()));
+  } else if (node->op == "<") {
+    if (lhs_type == Type::kInt && rhs_type == Type::kInt)
+      return builder->CreateICmpSLT(lhs_val, rhs_val);
+    return builder->CreateFCmpOLT(
+        builder->CreateSIToFP(lhs_val, builder->getDoubleTy()),
+        builder->CreateSIToFP(rhs_val, builder->getDoubleTy()));
+  } else if (node->op == "<=") {
+    if (lhs_type == Type::kInt && rhs_type == Type::kInt)
+      return builder->CreateICmpSLE(lhs_val, rhs_val);
+    return builder->CreateFCmpOLE(
+        builder->CreateSIToFP(lhs_val, builder->getDoubleTy()),
+        builder->CreateSIToFP(rhs_val, builder->getDoubleTy()));
+  } else if (node->op == ">") {
+    if (lhs_type == Type::kInt && rhs_type == Type::kInt)
+      return builder->CreateICmpSGT(lhs_val, rhs_val);
+    return builder->CreateFCmpOGT(
+        builder->CreateSIToFP(lhs_val, builder->getDoubleTy()),
+        builder->CreateSIToFP(rhs_val, builder->getDoubleTy()));
+  } else if (node->op == ">=") {
+    if (lhs_type == Type::kInt && rhs_type == Type::kInt)
+      return builder->CreateICmpSGE(lhs_val, rhs_val);
+    return builder->CreateFCmpOGE(
+        builder->CreateSIToFP(lhs_val, builder->getDoubleTy()),
+        builder->CreateSIToFP(rhs_val, builder->getDoubleTy()));
   } else
     throw std::logic_error(fmt::format("unsupported operator: {}", node->op));
 }
@@ -165,4 +201,47 @@ llvm::Value *IRGen::operator()(std::unique_ptr<CallExprNode> &node) {
       arg_values.push_back(builder->CreateSIToFP(val, builder->getDoubleTy()));
   }
   return builder->CreateCall(callee_func, arg_values);
+}
+
+llvm::Value *IRGen::operator()(std::unique_ptr<IfExprNode> &node) {
+  auto condition_value = std::visit(*this, node->condition);
+  auto parent_func = builder->GetInsertBlock()->getParent();
+  auto then_block = llvm::BasicBlock::Create(*context, "then", parent_func),
+       else_block = llvm::BasicBlock::Create(*context, "else"),
+       merge_block = llvm::BasicBlock::Create(*context, "cont");
+  ExprTypeChecker checker(globals, functions);
+  auto return_type = checker(node);
+  builder->CreateCondBr(condition_value, then_block, else_block);
+  builder->SetInsertPoint(then_block);
+  auto then_value = std::visit(*this, node->then_expr);
+  if (return_type == Type::kFloat)
+    then_value = builder->CreateSIToFP(then_value, builder->getDoubleTy());
+  builder->CreateBr(merge_block);
+  then_block = builder->GetInsertBlock();
+  parent_func->getBasicBlockList().push_back(else_block);
+  builder->SetInsertPoint(else_block);
+  auto else_value = std::visit(*this, node->else_expr);
+  if (return_type == Type::kFloat)
+    else_value = builder->CreateSIToFP(else_value, builder->getDoubleTy());
+  builder->CreateBr(merge_block);
+  else_block = builder->GetInsertBlock();
+  parent_func->getBasicBlockList().push_back(merge_block);
+  builder->SetInsertPoint(merge_block);
+  llvm::PHINode *phi_node;
+  switch (return_type) {
+  case Type::kInt:
+    phi_node = builder->CreatePHI(builder->getInt32Ty(), 2);
+    break;
+  case Type::kFloat:
+    phi_node = builder->CreatePHI(builder->getDoubleTy(), 2);
+    break;
+  case Type::kBool:
+    phi_node = builder->CreatePHI(builder->getInt1Ty(), 2);
+    break;
+  case Type::kVoid:
+    return nullptr;
+  }
+  phi_node->addIncoming(then_value, then_block);
+  phi_node->addIncoming(else_value, else_block);
+  return phi_node;
 }

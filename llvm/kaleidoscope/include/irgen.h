@@ -36,4 +36,5 @@ public:
   llvm::Value *operator()(VariableExprNode &node);
   llvm::Value *operator()(std::unique_ptr<BinaryExprNode> &node);
   llvm::Value *operator()(std::unique_ptr<CallExprNode> &node);
+  llvm::Value *operator()(std::unique_ptr<IfExprNode> &node);
 };
