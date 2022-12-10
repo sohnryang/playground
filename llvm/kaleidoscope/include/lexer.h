@@ -1,6 +1,8 @@
 #pragma once
 
 #include <istream>
+#include <map>
+#include <set>
 #include <streambuf>
 #include <string>
 #include <utility>
@@ -12,14 +14,16 @@ enum class TokenKind {
   kIdentifier,
   kInt,
   kFloat,
+  kOp,
   kMisc,
 };
 typedef std::pair<TokenKind, std::string> Token;
 
 class Lexer {
 private:
-  std::string identifier, code;
+  std::string identifier, op, code;
   std::string::iterator it;
+  std::map<int, std::set<int>> operator_dfa;
   int last_char;
 
 public:

@@ -2,8 +2,15 @@
 
 #include <cctype>
 
-Lexer::Lexer(std::string code) : code(code), last_char(' ') {
+Lexer::Lexer(std::string code) : code(code), last_char(' '), operator_dfa() {
   it = this->code.begin();
+  operator_dfa['<'] = {'\0', '='};
+  operator_dfa['>'] = {'\0', '='};
+  operator_dfa['='] = {'\0', '='};
+  operator_dfa['+'] = {'\0'};
+  operator_dfa['-'] = {'\0'};
+  operator_dfa['*'] = {'\0'};
+  operator_dfa['/'] = {'\0'};
 }
 
 Token Lexer::get_token() {
@@ -44,5 +51,12 @@ Token Lexer::get_token() {
 
   int this_char = last_char;
   last_char = *(it++);
-  return {TokenKind::kMisc, std::string(1, this_char)};
+  if (!operator_dfa.count(this_char))
+    return {TokenKind::kMisc, std::string(1, this_char)};
+  op = this_char;
+  while (operator_dfa[op.back()].contains(last_char)) {
+    op += last_char;
+    last_char = *(it++);
+  }
+  return {TokenKind::kOp, op};
 }
