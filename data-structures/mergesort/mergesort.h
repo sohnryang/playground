@@ -12,7 +12,7 @@ void merge_arr(std::vector<T> &arr, int lo, int mid, int hi) {
     right_arr[i] = arr[mid + i];
   int left_idx = 0, right_idx = 0, arr_idx = lo;
   while (left_idx < mid - lo && right_idx < hi - mid) {
-    if (left_arr[left_idx] <= right_arr[right_idx])
+    if (left_arr[left_idx] < right_arr[right_idx])
       arr[arr_idx++] = left_arr[left_idx++];
     else
       arr[arr_idx++] = right_arr[right_idx++];
