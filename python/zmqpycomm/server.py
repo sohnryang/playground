@@ -3,7 +3,7 @@ import zmq
 
 context = zmq.Context()
 socket = context.socket(zmq.REP)
-socket.bind("tcp://*:5555")
+socket.bind("ipc:///tmp/zmq_socket")
 print("Server started")
 
 while True:
