@@ -151,6 +151,10 @@ mod tests {
             Some(Token::NonTerminal("abcd".to_owned()))
         );
         assert_eq!(get_token(&mut "::=".chars()), Some(Token::Assignment));
+        assert_eq!(
+            get_token(&mut "\"\"".chars()),
+            Some(Token::Terminal("".to_owned()))
+        );
 
         let bnf_rule = "<hell> ::= <world> | \"abcd\" <efgh>;".to_owned();
         let mut it = bnf_rule.chars();
