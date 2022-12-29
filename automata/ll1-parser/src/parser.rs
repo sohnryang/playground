@@ -161,4 +161,19 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn test_eliminate_left_recursion_do_nothing() {
+        let bnf = r#"
+            <S> ::= "a" <A> | "b";
+            <A> ::= <S> "c" | <S> "d" | "";
+        "#;
+        let parsed_rules = parse_bnf(bnf).unwrap();
+        let eliminated = eliminate_left_recursion(&parsed_rules);
+        assert_eq!(parsed_rules[0], eliminated[0]);
+        assert_eq!(
+            parsed_rules[1],
+            expand_leftmost_nonterminal(&parsed_rules[1], &parsed_rules[1])
+        )
+    }
 }
