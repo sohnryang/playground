@@ -6,7 +6,7 @@ pub struct Rule {
     pub expressions: Vec<Vec<Symbol>>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Symbol {
     Terminal(String),
     NonTerminal(String),
