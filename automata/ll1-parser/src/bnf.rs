@@ -1,6 +1,6 @@
 use std::{str::Chars, vec};
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct Rule {
     pub name: String,
     pub expressions: Vec<Vec<Symbol>>,
