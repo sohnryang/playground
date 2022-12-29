@@ -32,7 +32,6 @@ fn main() {
     let bnf = read_to_string(args.grammar_input).expect("Could not read grammar file");
     let parsed_grammar = parse_bnf(bnf.as_str()).expect("Could not parse BNF");
     let eliminated = eliminate_left_recursion(&parsed_grammar);
-    println!("{eliminated:?}");
     if let Some(output_path) = args.grammar_output {
         let file = File::create(output_path).expect("Could not open output file");
         let mut file = LineWriter::new(file);
