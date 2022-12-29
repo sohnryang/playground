@@ -52,6 +52,7 @@ pub fn eliminate_left_recursion(rules: &Vec<Rule>) -> Vec<Rule> {
                     nonterminal_rule
                         .expressions
                         .push(vec![Symbol::NonTerminal(prime_name.clone())]);
+                    prime_expression.push(Symbol::Terminal("".to_owned()));
                 }
                 Symbol::NonTerminal(name) if name == &nonterminal_rule.name => {
                     prime_expression.extend(expression[1..].to_owned());
@@ -156,6 +157,7 @@ mod tests {
                             Symbol::Terminal("d".to_owned()),
                             Symbol::NonTerminal("A_prime".to_owned())
                         ],
+                        vec![Symbol::Terminal("".to_owned())]
                     ]
                 }
             ]
