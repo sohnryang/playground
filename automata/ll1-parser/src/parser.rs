@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::bnf::{Rule, Symbol};
 
 pub fn expand_leftmost_nonterminal(expandee: &Rule, expand_rule: &Rule) -> Rule {
@@ -15,6 +17,39 @@ pub fn expand_leftmost_nonterminal(expandee: &Rule, expand_rule: &Rule) -> Rule 
         } else {
             result.expressions.push(expression.clone());
         }
+    }
+    result
+}
+
+pub fn first(symbols: &Vec<Symbol>, rules: &Vec<Rule>) -> HashSet<Symbol> {
+    let mut result: HashSet<Symbol> = HashSet::new();
+    if symbols.len() == 1 {
+        match &symbols[0] {
+            Symbol::Terminal(_) => {
+                return symbols.iter().cloned().collect();
+            }
+            Symbol::NonTerminal(name) => {
+                let rule = rules.iter().find(|r| &r.name == name).unwrap();
+                for expression in &rule.expressions {
+                    result.extend(first(expression, rules));
+                }
+                return result;
+            }
+        }
+    }
+    let mut empty_in_all = true;
+    for symbol in symbols {
+        let mut first_of_symbol = first(&vec![symbol.clone()], rules);
+        if !first_of_symbol.contains(&Symbol::Terminal("".to_owned())) {
+            result.extend(first_of_symbol);
+            empty_in_all = false;
+            break;
+        }
+        first_of_symbol.remove(&Symbol::Terminal("".to_owned()));
+        result.extend(first_of_symbol);
+    }
+    if empty_in_all {
+        result.insert(Symbol::Terminal("".to_owned()));
     }
     result
 }
@@ -179,5 +214,86 @@ mod tests {
             parsed_rules[1],
             expand_leftmost_nonterminal(&parsed_rules[1], &parsed_rules[1])
         )
+    }
+
+    #[test]
+    fn test_first() {
+        let bnf = r#"
+            <E> ::= <E> "+" <T> | <T>;
+            <T> ::= <T> "*" <F> | <F>;
+            <F> ::= "(" <E> ")" | "id";
+        "#;
+        let parsed_rules = eliminate_left_recursion(&parse_bnf(bnf).unwrap());
+        assert_eq!(
+            first(&vec![Symbol::Terminal("+".to_owned())], &parsed_rules),
+            [Symbol::Terminal("+".to_owned())].iter().cloned().collect()
+        );
+        assert_eq!(
+            first(
+                &vec![
+                    Symbol::Terminal("(".to_owned()),
+                    Symbol::NonTerminal("E".to_owned()),
+                    Symbol::Terminal(")".to_owned())
+                ],
+                &parsed_rules
+            ),
+            [Symbol::Terminal("(".to_owned())].iter().cloned().collect()
+        );
+        assert_eq!(
+            first(&vec![Symbol::NonTerminal("F".to_owned())], &parsed_rules),
+            [
+                Symbol::Terminal("(".to_owned()),
+                Symbol::Terminal("id".to_owned())
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
+        assert_eq!(
+            first(&vec![Symbol::NonTerminal("T".to_owned())], &parsed_rules),
+            [
+                Symbol::Terminal("(".to_owned()),
+                Symbol::Terminal("id".to_owned())
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
+        assert_eq!(
+            first(&vec![Symbol::NonTerminal("E".to_owned())], &parsed_rules),
+            [
+                Symbol::Terminal("(".to_owned()),
+                Symbol::Terminal("id".to_owned())
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
+        assert_eq!(
+            first(
+                &vec![Symbol::NonTerminal("E_prime".to_owned())],
+                &parsed_rules
+            ),
+            [
+                Symbol::Terminal("+".to_owned()),
+                Symbol::Terminal("".to_owned())
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
+        assert_eq!(
+            first(
+                &vec![Symbol::NonTerminal("T_prime".to_owned())],
+                &parsed_rules
+            ),
+            [
+                Symbol::Terminal("*".to_owned()),
+                Symbol::Terminal("".to_owned())
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
     }
 }
