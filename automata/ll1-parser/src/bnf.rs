@@ -9,7 +9,8 @@ pub struct Rule {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Symbol {
     Terminal(String),
-    NonTerminal(String),
+    NonTerminal { name: String, start: bool },
+    Endmarker,
 }
 
 #[derive(Debug, PartialEq)]
@@ -101,7 +102,10 @@ pub fn parse_bnf(bnf_str: &str) -> Option<Vec<Rule>> {
                         expressions: vec![],
                     };
                 } else {
-                    current_expression.push(Symbol::NonTerminal(name.clone()));
+                    current_expression.push(Symbol::NonTerminal {
+                        name: name.clone(),
+                        start: false,
+                    });
                 }
             }
             Token::Terminal(s) => {
@@ -190,22 +194,34 @@ mod tests {
         assert_eq!(parsed[0].expressions[0].len(), 3);
         assert_eq!(
             parsed[0].expressions[0][0],
-            Symbol::NonTerminal("name-part".to_owned())
+            Symbol::NonTerminal {
+                name: "name-part".to_owned(),
+                start: false
+            }
         );
         assert_eq!(
             parsed[0].expressions[0][1],
-            Symbol::NonTerminal("street-address".to_owned())
+            Symbol::NonTerminal {
+                name: "street-address".to_owned(),
+                start: false
+            }
         );
         assert_eq!(
             parsed[0].expressions[0][2],
-            Symbol::NonTerminal("zip-part".to_owned())
+            Symbol::NonTerminal {
+                name: "zip-part".to_owned(),
+                start: false
+            }
         );
         assert_eq!(parsed[1].name, "personal-part".to_owned());
         assert_eq!(parsed[1].expressions.len(), 2);
         assert_eq!(parsed[1].expressions[0].len(), 2);
         assert_eq!(
             parsed[1].expressions[0][0],
-            Symbol::NonTerminal("initial".to_owned())
+            Symbol::NonTerminal {
+                name: "initial".to_owned(),
+                start: false
+            }
         );
         assert_eq!(
             parsed[1].expressions[0][1],
@@ -214,7 +230,10 @@ mod tests {
         assert_eq!(parsed[1].expressions[1].len(), 1);
         assert_eq!(
             parsed[1].expressions[1][0],
-            Symbol::NonTerminal("first-name".to_owned())
+            Symbol::NonTerminal {
+                name: "first-name".to_owned(),
+                start: false
+            }
         );
     }
 }

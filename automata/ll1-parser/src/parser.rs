@@ -8,7 +8,12 @@ pub fn expand_leftmost_nonterminal(expandee: &Rule, expand_rule: &Rule) -> Rule 
         expressions: vec![],
     };
     for expression in &expandee.expressions {
-        if expression[0] == Symbol::NonTerminal(expand_rule.name.clone()) {
+        if expression[0]
+            == (Symbol::NonTerminal {
+                name: expand_rule.name.clone(),
+                start: false,
+            })
+        {
             for expand_rule_expression in &expand_rule.expressions {
                 let mut expanded = expand_rule_expression.clone();
                 expanded.extend(expression[1..].to_owned());
@@ -28,12 +33,15 @@ pub fn first(symbols: &Vec<Symbol>, rules: &Vec<Rule>) -> HashSet<Symbol> {
             Symbol::Terminal(_) => {
                 return symbols.iter().cloned().collect();
             }
-            Symbol::NonTerminal(name) => {
+            Symbol::NonTerminal { name, start: _ } => {
                 let rule = rules.iter().find(|r| &r.name == name).unwrap();
                 for expression in &rule.expressions {
                     result.extend(first(expression, rules));
                 }
                 return result;
+            }
+            _ => {
+                return result; // Endmarker is ignored
             }
         }
     }
@@ -71,7 +79,13 @@ pub fn eliminate_left_recursion(rules: &Vec<Rule>) -> Vec<Rule> {
         if nonterminal_rule
             .expressions
             .iter()
-            .filter(|expr| expr[0] == Symbol::NonTerminal(nonterminal_rule.name.clone()))
+            .filter(|expr| {
+                expr[0]
+                    == Symbol::NonTerminal {
+                        name: nonterminal_rule.name.clone(),
+                        start: false,
+                    }
+            })
             .count()
             == 0
         {
@@ -84,13 +98,17 @@ pub fn eliminate_left_recursion(rules: &Vec<Rule>) -> Vec<Rule> {
             let mut prime_expression: Vec<Symbol> = vec![];
             match &expression[0] {
                 Symbol::Terminal(s) if s.is_empty() => {
-                    nonterminal_rule
-                        .expressions
-                        .push(vec![Symbol::NonTerminal(prime_name.clone())]);
+                    nonterminal_rule.expressions.push(vec![Symbol::NonTerminal {
+                        name: prime_name.clone(),
+                        start: false,
+                    }]);
                 }
-                Symbol::NonTerminal(name) if name == &nonterminal_rule.name => {
+                Symbol::NonTerminal { name, start: _ } if name == &nonterminal_rule.name => {
                     prime_expression.extend(expression[1..].to_owned());
-                    prime_expression.push(Symbol::NonTerminal(prime_name.clone()));
+                    prime_expression.push(Symbol::NonTerminal {
+                        name: prime_name.clone(),
+                        start: false,
+                    });
                 }
                 _ => {
                     nonterminal_rule.expressions.push(expression.clone());
@@ -98,7 +116,10 @@ pub fn eliminate_left_recursion(rules: &Vec<Rule>) -> Vec<Rule> {
                         .expressions
                         .last_mut()
                         .unwrap()
-                        .push(Symbol::NonTerminal(prime_name.clone()));
+                        .push(Symbol::NonTerminal {
+                            name: prime_name.clone(),
+                            start: false,
+                        });
                 }
             }
             if !prime_expression.is_empty() {
@@ -133,11 +154,17 @@ mod tests {
             a_expanded.expressions,
             vec![
                 vec![
-                    Symbol::NonTerminal("A".to_owned()),
+                    Symbol::NonTerminal {
+                        name: "A".to_owned(),
+                        start: false
+                    },
                     Symbol::Terminal("c".to_owned())
                 ],
                 vec![
-                    Symbol::NonTerminal("A".to_owned()),
+                    Symbol::NonTerminal {
+                        name: "A".to_owned(),
+                        start: false
+                    },
                     Symbol::Terminal("a".to_owned()),
                     Symbol::Terminal("d".to_owned())
                 ],
@@ -165,7 +192,10 @@ mod tests {
                     name: "S".to_owned(),
                     expressions: vec![
                         vec![
-                            Symbol::NonTerminal("A".to_owned()),
+                            Symbol::NonTerminal {
+                                name: "A".to_owned(),
+                                start: false
+                            },
                             Symbol::Terminal("a".to_owned()),
                         ],
                         vec![Symbol::Terminal("b".to_owned()),]
@@ -177,9 +207,15 @@ mod tests {
                         vec![
                             Symbol::Terminal("b".to_owned()),
                             Symbol::Terminal("d".to_owned()),
-                            Symbol::NonTerminal("A_prime".to_owned())
+                            Symbol::NonTerminal {
+                                name: "A_prime".to_owned(),
+                                start: false
+                            }
                         ],
-                        vec![Symbol::NonTerminal("A_prime".to_owned())]
+                        vec![Symbol::NonTerminal {
+                            name: "A_prime".to_owned(),
+                            start: false
+                        }]
                     ]
                 },
                 Rule {
@@ -187,12 +223,18 @@ mod tests {
                     expressions: vec![
                         vec![
                             Symbol::Terminal("c".to_owned()),
-                            Symbol::NonTerminal("A_prime".to_owned())
+                            Symbol::NonTerminal {
+                                name: "A_prime".to_owned(),
+                                start: false
+                            }
                         ],
                         vec![
                             Symbol::Terminal("a".to_owned()),
                             Symbol::Terminal("d".to_owned()),
-                            Symbol::NonTerminal("A_prime".to_owned())
+                            Symbol::NonTerminal {
+                                name: "A_prime".to_owned(),
+                                start: false
+                            }
                         ],
                         vec![Symbol::Terminal("".to_owned())]
                     ]
@@ -232,7 +274,10 @@ mod tests {
             first(
                 &vec![
                     Symbol::Terminal("(".to_owned()),
-                    Symbol::NonTerminal("E".to_owned()),
+                    Symbol::NonTerminal {
+                        name: "E".to_owned(),
+                        start: false
+                    },
                     Symbol::Terminal(")".to_owned())
                 ],
                 &parsed_rules
@@ -240,27 +285,13 @@ mod tests {
             [Symbol::Terminal("(".to_owned())].iter().cloned().collect()
         );
         assert_eq!(
-            first(&vec![Symbol::NonTerminal("F".to_owned())], &parsed_rules),
-            [
-                Symbol::Terminal("(".to_owned()),
-                Symbol::Terminal("id".to_owned())
-            ]
-            .iter()
-            .cloned()
-            .collect()
-        );
-        assert_eq!(
-            first(&vec![Symbol::NonTerminal("T".to_owned())], &parsed_rules),
-            [
-                Symbol::Terminal("(".to_owned()),
-                Symbol::Terminal("id".to_owned())
-            ]
-            .iter()
-            .cloned()
-            .collect()
-        );
-        assert_eq!(
-            first(&vec![Symbol::NonTerminal("E".to_owned())], &parsed_rules),
+            first(
+                &vec![Symbol::NonTerminal {
+                    name: "F".to_owned(),
+                    start: false
+                }],
+                &parsed_rules
+            ),
             [
                 Symbol::Terminal("(".to_owned()),
                 Symbol::Terminal("id".to_owned())
@@ -271,7 +302,42 @@ mod tests {
         );
         assert_eq!(
             first(
-                &vec![Symbol::NonTerminal("E_prime".to_owned())],
+                &vec![Symbol::NonTerminal {
+                    name: "T".to_owned(),
+                    start: false
+                }],
+                &parsed_rules
+            ),
+            [
+                Symbol::Terminal("(".to_owned()),
+                Symbol::Terminal("id".to_owned())
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
+        assert_eq!(
+            first(
+                &vec![Symbol::NonTerminal {
+                    name: "E".to_owned(),
+                    start: false
+                }],
+                &parsed_rules
+            ),
+            [
+                Symbol::Terminal("(".to_owned()),
+                Symbol::Terminal("id".to_owned())
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
+        assert_eq!(
+            first(
+                &vec![Symbol::NonTerminal {
+                    name: "E_prime".to_owned(),
+                    start: false
+                }],
                 &parsed_rules
             ),
             [
@@ -284,7 +350,10 @@ mod tests {
         );
         assert_eq!(
             first(
-                &vec![Symbol::NonTerminal("T_prime".to_owned())],
+                &vec![Symbol::NonTerminal {
+                    name: "T_prime".to_owned(),
+                    start: false
+                }],
                 &parsed_rules
             ),
             [
