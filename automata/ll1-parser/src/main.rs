@@ -48,13 +48,13 @@ fn main() {
                 for symbol in expression {
                     file.write_all(b" ").ok();
                     match symbol {
-                        Symbol::NonTerminal { name, start: _ } => {
+                        Symbol::NonTerminal(name) => {
                             file.write_all(format!("<{name}>").as_bytes()).ok();
                         }
                         Symbol::Terminal(s) => {
                             file.write_all(format!("\"{s}\"").as_bytes()).ok();
                         }
-                        _ => {} // Endmarker is ignored
+                        Symbol::Endmarker => {} // Endmarker is ignored
                     }
                 }
             }
