@@ -6,7 +6,7 @@ use std::{
 use clap::Parser;
 use ll1_parser::{
     bnf::{parse_bnf, Symbol},
-    parser::eliminate_left_recursion,
+    parser::{create_parse_table, eliminate_left_recursion, parse, ParseTreeNode},
 };
 
 #[derive(Parser, Debug)]
@@ -61,5 +61,27 @@ fn main() {
             file.write_all(b";\n").ok();
         }
         file.flush().ok();
+    }
+    let input = read_to_string(args.input_file).expect("Could not read input file");
+    let parse_table = create_parse_table(&eliminated).expect("Could not create parse table");
+    let start_symbol_name = eliminated[0].name.to_owned();
+    let parse_tree = parse(&input, &parse_table, start_symbol_name).expect("Parse failed");
+    let mut stack = vec![(&parse_tree, 0)];
+    while let Some((node, indent_size)) = stack.pop() {
+        for _ in 0..indent_size {
+            print!("| ");
+        }
+        match node {
+            ParseTreeNode::Terminal(s) => {
+                println!("Terminal[{s}]");
+            }
+            ParseTreeNode::NonTerminal { name, childs } => {
+                println!("NonTerminal[{name}]");
+                let new_indet_size = indent_size + 1;
+                for child in childs.iter().rev() {
+                    stack.push((child, new_indet_size));
+                }
+            }
+        }
     }
 }
