@@ -93,18 +93,22 @@ pub fn parse_bnf(bnf_str: &str) -> Option<Vec<Rule>> {
     let mut parsing_lhs = true;
     let mut current_rule: Rule = Default::default();
     let mut current_expression: Vec<Symbol> = vec![];
+    let mut start_symbol_name: String = "".to_owned();
     while let Some(token) = get_token(&mut it) {
         match token {
             Token::NonTerminal(name) => {
                 if parsing_lhs {
+                    if start_symbol_name.is_empty() {
+                        start_symbol_name = name.clone();
+                    }
                     current_rule = Rule {
-                        name: name.clone(),
+                        name,
                         expressions: vec![],
                     };
                 } else {
                     current_expression.push(Symbol::NonTerminal {
                         name: name.clone(),
-                        start: false,
+                        start: name == start_symbol_name,
                     });
                 }
             }

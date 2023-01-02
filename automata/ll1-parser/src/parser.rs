@@ -8,20 +8,17 @@ pub fn expand_leftmost_nonterminal(expandee: &Rule, expand_rule: &Rule) -> Rule 
         expressions: vec![],
     };
     for expression in &expandee.expressions {
-        if expression[0]
-            == (Symbol::NonTerminal {
-                name: expand_rule.name.clone(),
-                start: false,
-            })
-        {
-            for expand_rule_expression in &expand_rule.expressions {
-                let mut expanded = expand_rule_expression.clone();
-                expanded.extend(expression[1..].to_owned());
-                result.expressions.push(expanded);
+        if let Symbol::NonTerminal { name, start: _ } = &expression[0] {
+            if name == &expand_rule.name {
+                for expand_rule_expression in &expand_rule.expressions {
+                    let mut expanded = expand_rule_expression.clone();
+                    expanded.extend(expression[1..].to_owned());
+                    result.expressions.push(expanded);
+                }
+                continue;
             }
-        } else {
-            result.expressions.push(expression.clone());
         }
+        result.expressions.push(expression.clone());
     }
     result
 }
@@ -80,11 +77,11 @@ pub fn eliminate_left_recursion(rules: &Vec<Rule>) -> Vec<Rule> {
             .expressions
             .iter()
             .filter(|expr| {
-                expr[0]
-                    == Symbol::NonTerminal {
-                        name: nonterminal_rule.name.clone(),
-                        start: false,
-                    }
+                if let Symbol::NonTerminal { name, start: _ } = &expr[0] {
+                    name == &nonterminal_rule.name.clone()
+                } else {
+                    false
+                }
             })
             .count()
             == 0
@@ -276,7 +273,7 @@ mod tests {
                     Symbol::Terminal("(".to_owned()),
                     Symbol::NonTerminal {
                         name: "E".to_owned(),
-                        start: false
+                        start: true
                     },
                     Symbol::Terminal(")".to_owned())
                 ],
@@ -320,7 +317,7 @@ mod tests {
             first(
                 &vec![Symbol::NonTerminal {
                     name: "E".to_owned(),
-                    start: false
+                    start: true
                 }],
                 &parsed_rules
             ),
