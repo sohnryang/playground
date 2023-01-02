@@ -69,7 +69,7 @@ fn main() {
     let mut stack = vec![(&parse_tree, 0)];
     while let Some((node, indent_size)) = stack.pop() {
         for _ in 0..indent_size {
-            print!("| ");
+            print!("|   ");
         }
         match node {
             ParseTreeNode::Terminal(s) => {
