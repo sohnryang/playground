@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::bnf::{Rule, Symbol};
+use crate::bnf::{Rule, Symbol, EMPTY};
 
 pub fn expand_leftmost_nonterminal(expandee: &Rule, expand_rule: &Rule) -> Rule {
     let mut result = Rule {
@@ -72,9 +72,7 @@ pub fn eliminate_left_recursion(rules: &Vec<Rule>) -> Vec<Rule> {
                 prime.expressions.push(prime_expression);
             }
         }
-        prime
-            .expressions
-            .push(vec![Symbol::Terminal("".to_owned())]);
+        prime.expressions.push(vec![EMPTY]);
         primes.push(prime);
         eliminated.push(nonterminal_rule.clone());
     }
@@ -104,16 +102,16 @@ pub fn first(symbols: &Vec<Symbol>, rules: &Vec<Rule>) -> HashSet<Symbol> {
     let mut empty_in_all = true;
     for symbol in symbols {
         let mut first_of_symbol = first(&vec![symbol.clone()], rules);
-        if !first_of_symbol.contains(&Symbol::Terminal("".to_owned())) {
+        if !first_of_symbol.contains(&EMPTY) {
             result.extend(first_of_symbol);
             empty_in_all = false;
             break;
         }
-        first_of_symbol.remove(&Symbol::Terminal("".to_owned()));
+        first_of_symbol.remove(&EMPTY);
         result.extend(first_of_symbol);
     }
     if empty_in_all {
-        result.insert(Symbol::Terminal("".to_owned()));
+        result.insert(EMPTY);
     }
     result
 }
@@ -147,8 +145,8 @@ pub fn follow(
                 if let Some(idx) = expression.iter().position(|s| s == symbol) {
                     let first_set = first(&expression[idx + 1..].to_owned(), rules);
                     result.extend(first_set.clone());
-                    if first_set.contains(&Symbol::Terminal("".to_owned())) {
-                        result.remove(&Symbol::Terminal("".to_owned()));
+                    if first_set.contains(&EMPTY) {
+                        result.remove(&EMPTY);
                         result.extend(follow(
                             &Symbol::NonTerminal(rule.name.clone()),
                             rules,
@@ -173,7 +171,7 @@ pub fn create_parse_table(rules: &Vec<Rule>) -> HashMap<(Symbol, Symbol), Vec<Sy
             let first_set = first(expression, rules);
             let current_symbol = Symbol::NonTerminal(rule.name.clone());
             for terminal in &first_set {
-                if terminal == &Symbol::Terminal("".to_owned()) {
+                if terminal == &EMPTY {
                     continue;
                 }
                 matrix.insert(
@@ -181,7 +179,7 @@ pub fn create_parse_table(rules: &Vec<Rule>) -> HashMap<(Symbol, Symbol), Vec<Sy
                     expression.clone(),
                 );
             }
-            if first_set.contains(&Symbol::Terminal("".to_owned())) {
+            if first_set.contains(&EMPTY) {
                 let follow_set = follow(&current_symbol, rules, &mut knowns);
                 for terminal in &follow_set {
                     matrix.insert(
@@ -231,7 +229,7 @@ mod tests {
                     Symbol::Terminal("b".to_owned()),
                     Symbol::Terminal("d".to_owned())
                 ],
-                vec![Symbol::Terminal("".to_owned())]
+                vec![EMPTY]
             ]
         );
     }
@@ -280,7 +278,7 @@ mod tests {
                             Symbol::Terminal("d".to_owned()),
                             Symbol::NonTerminal("A_prime".to_owned())
                         ],
-                        vec![Symbol::Terminal("".to_owned())]
+                        vec![EMPTY]
                     ]
                 }
             ]
@@ -380,26 +378,20 @@ mod tests {
                 &vec![Symbol::NonTerminal("E_prime".to_owned(),)],
                 &parsed_rules
             ),
-            [
-                Symbol::Terminal("+".to_owned()),
-                Symbol::Terminal("".to_owned())
-            ]
-            .iter()
-            .cloned()
-            .collect()
+            [Symbol::Terminal("+".to_owned()), EMPTY]
+                .iter()
+                .cloned()
+                .collect()
         );
         assert_eq!(
             first(
                 &vec![Symbol::NonTerminal("T_prime".to_owned())],
                 &parsed_rules
             ),
-            [
-                Symbol::Terminal("*".to_owned()),
-                Symbol::Terminal("".to_owned())
-            ]
-            .iter()
-            .cloned()
-            .collect()
+            [Symbol::Terminal("*".to_owned()), EMPTY]
+                .iter()
+                .cloned()
+                .collect()
         );
     }
 
@@ -536,11 +528,11 @@ mod tests {
                         Symbol::NonTerminal("E_prime".to_owned()),
                         Symbol::Terminal(")".to_owned())
                     ),
-                    vec![Symbol::Terminal("".to_owned())]
+                    vec![EMPTY]
                 ),
                 (
                     (Symbol::NonTerminal("E_prime".to_owned()), Symbol::Endmarker),
-                    vec![Symbol::Terminal("".to_owned())]
+                    vec![EMPTY]
                 ),
                 (
                     (
@@ -567,7 +559,7 @@ mod tests {
                         Symbol::NonTerminal("T_prime".to_owned()),
                         Symbol::Terminal("+".to_owned())
                     ),
-                    vec![Symbol::Terminal("".to_owned())]
+                    vec![EMPTY]
                 ),
                 (
                     (
@@ -585,11 +577,11 @@ mod tests {
                         Symbol::NonTerminal("T_prime".to_owned()),
                         Symbol::Terminal(")".to_owned())
                     ),
-                    vec![Symbol::Terminal("".to_owned())]
+                    vec![EMPTY]
                 ),
                 (
                     (Symbol::NonTerminal("T_prime".to_owned()), Symbol::Endmarker),
-                    vec![Symbol::Terminal("".to_owned())]
+                    vec![EMPTY]
                 ),
                 (
                     (

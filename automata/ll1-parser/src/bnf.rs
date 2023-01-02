@@ -13,6 +13,8 @@ pub enum Symbol {
     Endmarker,
 }
 
+pub const EMPTY: Symbol = Symbol::Terminal(String::new());
+
 #[derive(Debug, PartialEq)]
 pub enum Token {
     Terminal(String),
