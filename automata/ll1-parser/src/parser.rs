@@ -165,6 +165,42 @@ pub fn follow(
     }
 }
 
+pub fn create_parse_table(rules: &Vec<Rule>) -> HashMap<(Symbol, Symbol), Vec<Symbol>> {
+    let mut matrix: HashMap<(Symbol, Symbol), Vec<Symbol>> = HashMap::new();
+    let mut knowns: HashMap<Symbol, HashSet<Symbol>> = HashMap::new();
+    for rule in rules {
+        for expression in &rule.expressions {
+            let first_set = first(expression, rules);
+            let current_symbol = Symbol::NonTerminal(rule.name.clone());
+            for terminal in &first_set {
+                if terminal == &Symbol::Terminal("".to_owned()) {
+                    continue;
+                }
+                matrix.insert(
+                    (current_symbol.clone(), terminal.clone()),
+                    expression.clone(),
+                );
+            }
+            if first_set.contains(&Symbol::Terminal("".to_owned())) {
+                let follow_set = follow(&current_symbol, rules, &mut knowns);
+                for terminal in &follow_set {
+                    matrix.insert(
+                        (current_symbol.clone(), terminal.clone()),
+                        expression.clone(),
+                    );
+                }
+                if follow_set.contains(&Symbol::Endmarker) {
+                    matrix.insert(
+                        (current_symbol.clone(), Symbol::Endmarker),
+                        expression.clone(),
+                    );
+                }
+            }
+        }
+    }
+    matrix
+}
+
 #[cfg(test)]
 mod tests {
     use crate::bnf::{parse_bnf, Rule, Symbol};
@@ -445,6 +481,134 @@ mod tests {
                 Symbol::Terminal("*".to_owned()),
                 Symbol::Terminal(")".to_owned()),
                 Symbol::Endmarker
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
+    }
+
+    #[test]
+    fn test_create_parse_table() {
+        let bnf = r#"
+            <E> ::= <E> "+" <T> | <T>;
+            <T> ::= <T> "*" <F> | <F>;
+            <F> ::= "(" <E> ")" | "id";
+        "#;
+        let parsed_rules = eliminate_left_recursion(&parse_bnf(bnf).unwrap());
+        let parse_table = create_parse_table(&parsed_rules);
+        assert_eq!(
+            parse_table,
+            [
+                (
+                    (
+                        Symbol::NonTerminal("E".to_owned()),
+                        Symbol::Terminal("id".to_owned())
+                    ),
+                    vec![
+                        Symbol::NonTerminal("T".to_owned()),
+                        Symbol::NonTerminal("E_prime".to_owned())
+                    ]
+                ),
+                (
+                    (
+                        Symbol::NonTerminal("E".to_owned()),
+                        Symbol::Terminal("(".to_owned())
+                    ),
+                    vec![
+                        Symbol::NonTerminal("T".to_owned()),
+                        Symbol::NonTerminal("E_prime".to_owned())
+                    ]
+                ),
+                (
+                    (
+                        Symbol::NonTerminal("E_prime".to_owned()),
+                        Symbol::Terminal("+".to_owned())
+                    ),
+                    vec![
+                        Symbol::Terminal("+".to_owned()),
+                        Symbol::NonTerminal("T".to_owned()),
+                        Symbol::NonTerminal("E_prime".to_owned())
+                    ]
+                ),
+                (
+                    (
+                        Symbol::NonTerminal("E_prime".to_owned()),
+                        Symbol::Terminal(")".to_owned())
+                    ),
+                    vec![Symbol::Terminal("".to_owned())]
+                ),
+                (
+                    (Symbol::NonTerminal("E_prime".to_owned()), Symbol::Endmarker),
+                    vec![Symbol::Terminal("".to_owned())]
+                ),
+                (
+                    (
+                        Symbol::NonTerminal("T".to_owned()),
+                        Symbol::Terminal("id".to_owned())
+                    ),
+                    vec![
+                        Symbol::NonTerminal("F".to_owned()),
+                        Symbol::NonTerminal("T_prime".to_owned())
+                    ]
+                ),
+                (
+                    (
+                        Symbol::NonTerminal("T".to_owned()),
+                        Symbol::Terminal("(".to_owned())
+                    ),
+                    vec![
+                        Symbol::NonTerminal("F".to_owned()),
+                        Symbol::NonTerminal("T_prime".to_owned())
+                    ]
+                ),
+                (
+                    (
+                        Symbol::NonTerminal("T_prime".to_owned()),
+                        Symbol::Terminal("+".to_owned())
+                    ),
+                    vec![Symbol::Terminal("".to_owned())]
+                ),
+                (
+                    (
+                        Symbol::NonTerminal("T_prime".to_owned()),
+                        Symbol::Terminal("*".to_owned())
+                    ),
+                    vec![
+                        Symbol::Terminal("*".to_owned()),
+                        Symbol::NonTerminal("F".to_owned()),
+                        Symbol::NonTerminal("T_prime".to_owned())
+                    ]
+                ),
+                (
+                    (
+                        Symbol::NonTerminal("T_prime".to_owned()),
+                        Symbol::Terminal(")".to_owned())
+                    ),
+                    vec![Symbol::Terminal("".to_owned())]
+                ),
+                (
+                    (Symbol::NonTerminal("T_prime".to_owned()), Symbol::Endmarker),
+                    vec![Symbol::Terminal("".to_owned())]
+                ),
+                (
+                    (
+                        Symbol::NonTerminal("F".to_owned()),
+                        Symbol::Terminal("id".to_owned())
+                    ),
+                    vec![Symbol::Terminal("id".to_owned())]
+                ),
+                (
+                    (
+                        Symbol::NonTerminal("F".to_owned()),
+                        Symbol::Terminal("(".to_owned())
+                    ),
+                    vec![
+                        Symbol::Terminal("(".to_owned()),
+                        Symbol::NonTerminal("E".to_owned()),
+                        Symbol::Terminal(")".to_owned())
+                    ]
+                ),
             ]
             .iter()
             .cloned()
