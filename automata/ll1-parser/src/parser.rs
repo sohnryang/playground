@@ -23,6 +23,80 @@ pub fn expand_leftmost_nonterminal(expandee: &Rule, expand_rule: &Rule) -> Rule 
     result
 }
 
+pub fn eliminate_left_recursion(rules: &Vec<Rule>) -> Vec<Rule> {
+    let mut eliminated: Vec<Rule> = vec![];
+    let mut primes: Vec<Rule> = vec![];
+    let mut nonterminals: Vec<Rule> = rules.clone();
+    for nonterminal_rule in nonterminals.iter_mut() {
+        for past_nonterminal_rule in &eliminated {
+            *nonterminal_rule =
+                expand_leftmost_nonterminal(nonterminal_rule, past_nonterminal_rule);
+        }
+        let prime_name = nonterminal_rule.name.clone() + "_prime";
+        let mut prime = Rule {
+            name: prime_name.clone(),
+            expressions: vec![],
+        };
+        if nonterminal_rule
+            .expressions
+            .iter()
+            .filter(|expr| {
+                if let Symbol::NonTerminal { name, start: _ } = &expr[0] {
+                    name == &nonterminal_rule.name.clone()
+                } else {
+                    false
+                }
+            })
+            .count()
+            == 0
+        {
+            eliminated.push(nonterminal_rule.clone());
+            continue;
+        }
+        let expressions_old = nonterminal_rule.expressions.clone();
+        nonterminal_rule.expressions.clear();
+        for expression in expressions_old {
+            let mut prime_expression: Vec<Symbol> = vec![];
+            match &expression[0] {
+                Symbol::Terminal(s) if s.is_empty() => {
+                    nonterminal_rule.expressions.push(vec![Symbol::NonTerminal {
+                        name: prime_name.clone(),
+                        start: false,
+                    }]);
+                }
+                Symbol::NonTerminal { name, start: _ } if name == &nonterminal_rule.name => {
+                    prime_expression.extend(expression[1..].to_owned());
+                    prime_expression.push(Symbol::NonTerminal {
+                        name: prime_name.clone(),
+                        start: false,
+                    });
+                }
+                _ => {
+                    nonterminal_rule.expressions.push(expression.clone());
+                    nonterminal_rule
+                        .expressions
+                        .last_mut()
+                        .unwrap()
+                        .push(Symbol::NonTerminal {
+                            name: prime_name.clone(),
+                            start: false,
+                        });
+                }
+            }
+            if !prime_expression.is_empty() {
+                prime.expressions.push(prime_expression);
+            }
+        }
+        prime
+            .expressions
+            .push(vec![Symbol::Terminal("".to_owned())]);
+        primes.push(prime);
+        eliminated.push(nonterminal_rule.clone());
+    }
+    eliminated.extend(primes);
+    eliminated
+}
+
 pub fn first(symbols: &Vec<Symbol>, rules: &Vec<Rule>) -> HashSet<Symbol> {
     let mut result: HashSet<Symbol> = HashSet::new();
     if symbols.len() == 1 {
@@ -109,80 +183,6 @@ pub fn follow(
     } else {
         HashSet::new()
     }
-}
-
-pub fn eliminate_left_recursion(rules: &Vec<Rule>) -> Vec<Rule> {
-    let mut eliminated: Vec<Rule> = vec![];
-    let mut primes: Vec<Rule> = vec![];
-    let mut nonterminals: Vec<Rule> = rules.clone();
-    for nonterminal_rule in nonterminals.iter_mut() {
-        for past_nonterminal_rule in &eliminated {
-            *nonterminal_rule =
-                expand_leftmost_nonterminal(nonterminal_rule, past_nonterminal_rule);
-        }
-        let prime_name = nonterminal_rule.name.clone() + "_prime";
-        let mut prime = Rule {
-            name: prime_name.clone(),
-            expressions: vec![],
-        };
-        if nonterminal_rule
-            .expressions
-            .iter()
-            .filter(|expr| {
-                if let Symbol::NonTerminal { name, start: _ } = &expr[0] {
-                    name == &nonterminal_rule.name.clone()
-                } else {
-                    false
-                }
-            })
-            .count()
-            == 0
-        {
-            eliminated.push(nonterminal_rule.clone());
-            continue;
-        }
-        let expressions_old = nonterminal_rule.expressions.clone();
-        nonterminal_rule.expressions.clear();
-        for expression in expressions_old {
-            let mut prime_expression: Vec<Symbol> = vec![];
-            match &expression[0] {
-                Symbol::Terminal(s) if s.is_empty() => {
-                    nonterminal_rule.expressions.push(vec![Symbol::NonTerminal {
-                        name: prime_name.clone(),
-                        start: false,
-                    }]);
-                }
-                Symbol::NonTerminal { name, start: _ } if name == &nonterminal_rule.name => {
-                    prime_expression.extend(expression[1..].to_owned());
-                    prime_expression.push(Symbol::NonTerminal {
-                        name: prime_name.clone(),
-                        start: false,
-                    });
-                }
-                _ => {
-                    nonterminal_rule.expressions.push(expression.clone());
-                    nonterminal_rule
-                        .expressions
-                        .last_mut()
-                        .unwrap()
-                        .push(Symbol::NonTerminal {
-                            name: prime_name.clone(),
-                            start: false,
-                        });
-                }
-            }
-            if !prime_expression.is_empty() {
-                prime.expressions.push(prime_expression);
-            }
-        }
-        prime
-            .expressions
-            .push(vec![Symbol::Terminal("".to_owned())]);
-        primes.push(prime);
-        eliminated.push(nonterminal_rule.clone());
-    }
-    eliminated.extend(primes);
-    eliminated
 }
 
 #[cfg(test)]
