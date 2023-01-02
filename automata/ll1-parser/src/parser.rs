@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    mem,
+};
 
 use crate::bnf::{Rule, Symbol, EMPTY};
 
@@ -206,6 +209,100 @@ pub fn create_parse_table(rules: &Vec<Rule>) -> Option<HashMap<(Symbol, Symbol),
         }
     }
     Some(matrix)
+}
+
+#[derive(Clone, Debug)]
+pub enum ParseTreeNode {
+    Terminal(String),
+    NonTerminal {
+        name: String,
+        childs: Vec<ParseTreeNode>,
+    },
+}
+
+pub fn parse(
+    str_to_parse: &str,
+    parse_table: &HashMap<(Symbol, Symbol), Vec<Symbol>>,
+    start_symbol_name: String,
+) -> Option<ParseTreeNode> {
+    let mut tokens = str_to_parse
+        .split_whitespace()
+        .map(|s| Symbol::Terminal(s.to_owned()))
+        .collect::<Vec<_>>();
+    tokens.push(Symbol::Endmarker);
+    let mut token_iter = tokens.iter();
+    let mut current_token = token_iter.next().unwrap();
+    let mut tree = ParseTreeNode::NonTerminal {
+        name: start_symbol_name.clone(),
+        childs: vec![],
+    };
+    let mut stack = vec![
+        Symbol::Endmarker,
+        Symbol::NonTerminal(start_symbol_name.clone()),
+    ];
+    let mut node_stack = vec![&mut tree];
+    while let Some(top_symbol) = stack.last() {
+        if top_symbol == current_token {
+            stack.pop();
+            let last_token = current_token;
+            match token_iter.next() {
+                Some(token) => {
+                    current_token = token;
+                }
+                None => {
+                    break;
+                }
+            }
+            let node = node_stack.pop().unwrap();
+            if let Symbol::Terminal(s) = last_token {
+                _ = mem::replace(node, ParseTreeNode::Terminal(s.clone()));
+            }
+            continue;
+        } else if top_symbol == &EMPTY {
+            stack.pop();
+            let node = node_stack.pop().unwrap();
+            _ = mem::replace(node, ParseTreeNode::Terminal("".to_owned()));
+            continue;
+        }
+        match top_symbol.clone() {
+            Symbol::Endmarker => {
+                break;
+            }
+            Symbol::Terminal(_) => {
+                return None;
+            }
+            Symbol::NonTerminal(_)
+                if !parse_table.contains_key(&(top_symbol.clone(), current_token.clone())) =>
+            {
+                return None;
+            }
+            Symbol::NonTerminal(name) => {
+                let expansion = parse_table[&(top_symbol.clone(), current_token.clone())].clone();
+                stack.pop();
+                if let ParseTreeNode::NonTerminal {
+                    name: name_ref,
+                    childs,
+                } = node_stack.pop().unwrap()
+                {
+                    _ = mem::replace(name_ref, name);
+                    childs.resize(
+                        expansion.len(),
+                        ParseTreeNode::NonTerminal {
+                            name: "".to_owned(),
+                            childs: vec![],
+                        },
+                    );
+                    for child in childs.iter_mut().rev() {
+                        node_stack.push(child);
+                    }
+                }
+                for symbol in expansion.iter().rev() {
+                    stack.push(symbol.clone());
+                }
+            }
+        }
+    }
+    Some(tree)
 }
 
 #[cfg(test)]
