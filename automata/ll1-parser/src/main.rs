@@ -67,8 +67,8 @@ fn main() {
     let start_symbol_name = eliminated[0].name.to_owned();
     let parse_tree = parse(&input, &parse_table, start_symbol_name).expect("Parse failed");
     let mut stack = vec![(&parse_tree, 0)];
-    while let Some((node, indent_size)) = stack.pop() {
-        for _ in 0..indent_size {
+    while let Some((node, indent_step)) = stack.pop() {
+        for _ in 0..indent_step {
             print!("|   ");
         }
         match node {
@@ -77,9 +77,9 @@ fn main() {
             }
             ParseTreeNode::NonTerminal { name, children } => {
                 println!("NonTerminal[{name}]");
-                let new_indet_size = indent_size + 1;
+                let new_indet_step = indent_step + 1;
                 for child in children.iter().rev() {
-                    stack.push((child, new_indet_size));
+                    stack.push((child, new_indet_step));
                 }
             }
         }
