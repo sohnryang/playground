@@ -21,10 +21,10 @@ pub fn expand_leftmost_nonterminal(expandee: &Rule, expand_rule: &Rule) -> Rule 
     result
 }
 
-pub fn eliminate_left_recursion(rules: &Vec<Rule>) -> Vec<Rule> {
+pub fn eliminate_left_recursion(rules: &[Rule]) -> Vec<Rule> {
     let mut eliminated: Vec<Rule> = vec![];
     let mut primes: Vec<Rule> = vec![];
-    let mut nonterminals: Vec<Rule> = rules.clone();
+    let mut nonterminals: Vec<Rule> = rules.to_owned();
     for nonterminal_rule in nonterminals.iter_mut() {
         for past_nonterminal_rule in &eliminated {
             *nonterminal_rule =
@@ -261,7 +261,7 @@ mod tests {
                             Symbol::NonTerminal("A".to_owned()),
                             Symbol::Terminal("a".to_owned()),
                         ],
-                        vec![Symbol::Terminal("b".to_owned()),]
+                        vec![Symbol::Terminal("b".to_owned())]
                     ]
                 },
                 Rule {
