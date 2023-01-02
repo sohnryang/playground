@@ -163,7 +163,7 @@ pub fn follow(
     }
 }
 
-pub fn create_parse_table(rules: &Vec<Rule>) -> HashMap<(Symbol, Symbol), Vec<Symbol>> {
+pub fn create_parse_table(rules: &Vec<Rule>) -> Option<HashMap<(Symbol, Symbol), Vec<Symbol>>> {
     let mut matrix: HashMap<(Symbol, Symbol), Vec<Symbol>> = HashMap::new();
     let mut knowns: HashMap<Symbol, HashSet<Symbol>> = HashMap::new();
     for rule in rules {
@@ -173,6 +173,15 @@ pub fn create_parse_table(rules: &Vec<Rule>) -> HashMap<(Symbol, Symbol), Vec<Sy
             for terminal in &first_set {
                 if terminal == &EMPTY {
                     continue;
+                }
+                if let Some(existing) = matrix.get(&(current_symbol.clone(), terminal.clone())) {
+                    if existing != &vec![EMPTY] {
+                        if expression == &vec![EMPTY] {
+                            continue;
+                        } else {
+                            return None;
+                        }
+                    }
                 }
                 matrix.insert(
                     (current_symbol.clone(), terminal.clone()),
@@ -196,7 +205,7 @@ pub fn create_parse_table(rules: &Vec<Rule>) -> HashMap<(Symbol, Symbol), Vec<Sy
             }
         }
     }
-    matrix
+    Some(matrix)
 }
 
 #[cfg(test)]
@@ -488,7 +497,7 @@ mod tests {
             <F> ::= "(" <E> ")" | "id";
         "#;
         let parsed_rules = eliminate_left_recursion(&parse_bnf(bnf).unwrap());
-        let parse_table = create_parse_table(&parsed_rules);
+        let parse_table = create_parse_table(&parsed_rules).unwrap();
         assert_eq!(
             parse_table,
             [
