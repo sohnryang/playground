@@ -75,10 +75,10 @@ fn main() {
             ParseTreeNode::Terminal(s) => {
                 println!("Terminal[{s}]");
             }
-            ParseTreeNode::NonTerminal { name, childs } => {
+            ParseTreeNode::NonTerminal { name, children } => {
                 println!("NonTerminal[{name}]");
                 let new_indet_size = indent_size + 1;
-                for child in childs.iter().rev() {
+                for child in children.iter().rev() {
                     stack.push((child, new_indet_size));
                 }
             }

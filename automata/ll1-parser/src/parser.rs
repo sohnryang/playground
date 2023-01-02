@@ -216,7 +216,7 @@ pub enum ParseTreeNode {
     Terminal(String),
     NonTerminal {
         name: String,
-        childs: Vec<ParseTreeNode>,
+        children: Vec<ParseTreeNode>,
     },
 }
 
@@ -234,7 +234,7 @@ pub fn parse(
     let mut current_token = token_iter.next().unwrap();
     let mut tree = ParseTreeNode::NonTerminal {
         name: start_symbol_name.clone(),
-        childs: vec![],
+        children: vec![],
     };
     let mut stack = vec![
         Symbol::Endmarker,
@@ -281,18 +281,18 @@ pub fn parse(
                 stack.pop();
                 if let ParseTreeNode::NonTerminal {
                     name: name_ref,
-                    childs,
+                    children,
                 } = node_stack.pop().unwrap()
                 {
                     _ = mem::replace(name_ref, name);
-                    childs.resize(
+                    children.resize(
                         expansion.len(),
                         ParseTreeNode::NonTerminal {
                             name: "".to_owned(),
-                            childs: vec![],
+                            children: vec![],
                         },
                     );
-                    for child in childs.iter_mut().rev() {
+                    for child in children.iter_mut().rev() {
                         node_stack.push(child);
                     }
                 }
