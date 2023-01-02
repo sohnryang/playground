@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::bnf::{Rule, Symbol};
 
@@ -57,6 +57,58 @@ pub fn first(symbols: &Vec<Symbol>, rules: &Vec<Rule>) -> HashSet<Symbol> {
         result.insert(Symbol::Terminal("".to_owned()));
     }
     result
+}
+
+pub fn follow(
+    symbol: &Symbol,
+    rules: &Vec<Rule>,
+    knowns: &HashMap<Symbol, HashSet<Symbol>>,
+) -> HashSet<Symbol> {
+    if knowns.contains_key(symbol) {
+        return knowns.get(symbol).unwrap().clone();
+    }
+    if let Symbol::NonTerminal { name, start } = symbol {
+        let mut result: HashSet<Symbol> = HashSet::new();
+        if *start {
+            result.insert(Symbol::Endmarker);
+        }
+        for rule in rules {
+            for expression in &rule.expressions {
+                if &rule.name == name {
+                    continue;
+                }
+                if expression.last().unwrap() == symbol {
+                    result.extend(follow(
+                        &Symbol::NonTerminal {
+                            name: rule.name.clone(),
+                            start: rules[0].name == rule.name,
+                        },
+                        rules,
+                        knowns,
+                    ));
+                    continue;
+                }
+                if let Some(idx) = expression.iter().position(|s| s == symbol) {
+                    let first_set = first(&expression[idx + 1..].to_owned(), rules);
+                    result.extend(first_set.clone());
+                    if first_set.contains(&Symbol::Terminal("".to_owned())) {
+                        result.remove(&Symbol::Terminal("".to_owned()));
+                        result.extend(follow(
+                            &Symbol::NonTerminal {
+                                name: rule.name.clone(),
+                                start: false,
+                            },
+                            rules,
+                            knowns,
+                        ));
+                    }
+                }
+            }
+        }
+        result
+    } else {
+        HashSet::new()
+    }
 }
 
 pub fn eliminate_left_recursion(rules: &Vec<Rule>) -> Vec<Rule> {
@@ -360,6 +412,140 @@ mod tests {
             .iter()
             .cloned()
             .collect()
+        );
+    }
+
+    #[test]
+    fn test_follow() {
+        let bnf = r#"
+            <E> ::= <E> "+" <T> | <T>;
+            <T> ::= <T> "*" <F> | <F>;
+            <F> ::= "(" <E> ")" | "id";
+        "#;
+        let parsed_rules = eliminate_left_recursion(&parse_bnf(bnf).unwrap());
+        let mut knowns: HashMap<Symbol, HashSet<Symbol>> = HashMap::new();
+        let follow_e = follow(
+            &Symbol::NonTerminal {
+                name: "E".to_owned(),
+                start: true,
+            },
+            &parsed_rules,
+            &knowns,
+        );
+        assert_eq!(
+            follow_e,
+            [Symbol::Terminal(")".to_owned()), Symbol::Endmarker]
+                .iter()
+                .cloned()
+                .collect()
+        );
+        knowns.insert(
+            Symbol::NonTerminal {
+                name: "E".to_owned(),
+                start: true,
+            },
+            follow_e,
+        );
+        let follow_e_prime = follow(
+            &Symbol::NonTerminal {
+                name: "E_prime".to_owned(),
+                start: false,
+            },
+            &parsed_rules,
+            &knowns,
+        );
+        assert_eq!(
+            follow_e_prime,
+            [Symbol::Terminal(")".to_owned()), Symbol::Endmarker]
+                .iter()
+                .cloned()
+                .collect()
+        );
+        knowns.insert(
+            Symbol::NonTerminal {
+                name: "E_prime".to_owned(),
+                start: false,
+            },
+            follow_e_prime,
+        );
+        let follow_t = follow(
+            &Symbol::NonTerminal {
+                name: "T".to_owned(),
+                start: false,
+            },
+            &parsed_rules,
+            &knowns,
+        );
+        assert_eq!(
+            follow_t,
+            [
+                Symbol::Terminal("+".to_owned()),
+                Symbol::Terminal(")".to_owned()),
+                Symbol::Endmarker
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
+        knowns.insert(
+            Symbol::NonTerminal {
+                name: "T".to_owned(),
+                start: false,
+            },
+            follow_t,
+        );
+        let follow_t_prime = follow(
+            &Symbol::NonTerminal {
+                name: "T_prime".to_owned(),
+                start: false,
+            },
+            &parsed_rules,
+            &knowns,
+        );
+        assert_eq!(
+            follow_t_prime,
+            [
+                Symbol::Terminal("+".to_owned()),
+                Symbol::Terminal(")".to_owned()),
+                Symbol::Endmarker
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
+        knowns.insert(
+            Symbol::NonTerminal {
+                name: "T_prime".to_owned(),
+                start: false,
+            },
+            follow_t_prime,
+        );
+        let follow_f = follow(
+            &Symbol::NonTerminal {
+                name: "F".to_owned(),
+                start: false,
+            },
+            &parsed_rules,
+            &knowns,
+        );
+        assert_eq!(
+            follow_f,
+            [
+                Symbol::Terminal("+".to_owned()),
+                Symbol::Terminal("*".to_owned()),
+                Symbol::Terminal(")".to_owned()),
+                Symbol::Endmarker
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
+        knowns.insert(
+            Symbol::NonTerminal {
+                name: "T".to_owned(),
+                start: false,
+            },
+            follow_f,
         );
     }
 }
