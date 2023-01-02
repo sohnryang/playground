@@ -15,7 +15,7 @@ pub enum Symbol {
 
 pub const EMPTY: Symbol = Symbol::Terminal(String::new());
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Token {
     Terminal(String),
     NonTerminal(String),
