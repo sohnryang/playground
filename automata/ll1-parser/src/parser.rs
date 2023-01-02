@@ -121,7 +121,7 @@ pub fn first(symbols: &Vec<Symbol>, rules: &Vec<Rule>) -> HashSet<Symbol> {
 pub fn follow(
     symbol: &Symbol,
     rules: &Vec<Rule>,
-    knowns: &HashMap<Symbol, HashSet<Symbol>>,
+    knowns: &mut HashMap<Symbol, HashSet<Symbol>>,
 ) -> HashSet<Symbol> {
     if knowns.contains_key(symbol) {
         return knowns.get(symbol).unwrap().clone();
@@ -158,6 +158,7 @@ pub fn follow(
                 }
             }
         }
+        knowns.insert(symbol.clone(), result.clone());
         result
     } else {
         HashSet::new()
@@ -375,7 +376,11 @@ mod tests {
         "#;
         let parsed_rules = eliminate_left_recursion(&parse_bnf(bnf).unwrap());
         let mut knowns: HashMap<Symbol, HashSet<Symbol>> = HashMap::new();
-        let follow_e = follow(&Symbol::NonTerminal("E".to_owned()), &parsed_rules, &knowns);
+        let follow_e = follow(
+            &Symbol::NonTerminal("E".to_owned()),
+            &parsed_rules,
+            &mut knowns,
+        );
         assert_eq!(
             follow_e,
             [Symbol::Terminal(")".to_owned()), Symbol::Endmarker]
@@ -383,11 +388,10 @@ mod tests {
                 .cloned()
                 .collect()
         );
-        knowns.insert(Symbol::NonTerminal("E".to_owned()), follow_e);
         let follow_e_prime = follow(
             &Symbol::NonTerminal("E_prime".to_owned()),
             &parsed_rules,
-            &knowns,
+            &mut knowns,
         );
         assert_eq!(
             follow_e_prime,
@@ -396,8 +400,11 @@ mod tests {
                 .cloned()
                 .collect()
         );
-        knowns.insert(Symbol::NonTerminal("E_prime".to_owned()), follow_e_prime);
-        let follow_t = follow(&Symbol::NonTerminal("T".to_owned()), &parsed_rules, &knowns);
+        let follow_t = follow(
+            &Symbol::NonTerminal("T".to_owned()),
+            &parsed_rules,
+            &mut knowns,
+        );
         assert_eq!(
             follow_t,
             [
@@ -413,7 +420,7 @@ mod tests {
         let follow_t_prime = follow(
             &Symbol::NonTerminal("T_prime".to_owned()),
             &parsed_rules,
-            &knowns,
+            &mut knowns,
         );
         assert_eq!(
             follow_t_prime,
@@ -426,8 +433,11 @@ mod tests {
             .cloned()
             .collect()
         );
-        knowns.insert(Symbol::NonTerminal("T_prime".to_owned()), follow_t_prime);
-        let follow_f = follow(&Symbol::NonTerminal("F".to_owned()), &parsed_rules, &knowns);
+        let follow_f = follow(
+            &Symbol::NonTerminal("F".to_owned()),
+            &parsed_rules,
+            &mut knowns,
+        );
         assert_eq!(
             follow_f,
             [
@@ -440,6 +450,5 @@ mod tests {
             .cloned()
             .collect()
         );
-        knowns.insert(Symbol::NonTerminal("T".to_owned()), follow_f);
     }
 }
