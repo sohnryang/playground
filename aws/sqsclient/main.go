@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"flag"
 	"log"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 )
 
 type Data struct {
@@ -22,17 +24,33 @@ func must(err error) {
 }
 
 func main() {
-	sess := session.Must(session.NewSession(&aws.Config{
-		Endpoint: aws.String("http://localhost:4566"), // localstack endpoint
-	}))
-	svc := sqs.New(sess)
+	endpointFlag := flag.String("endpoint", "", "AWS endpoint URL")
+	flag.Parse()
+	ctx := context.TODO()
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithEndpointResolver(
+			aws.EndpointResolverFunc(
+				func(service, region string) (aws.Endpoint, error) {
+					if *endpointFlag != "" {
+						return aws.Endpoint{
+							URL:         *endpointFlag,
+							PartitionID: "aws",
+						}, nil
+					}
+					return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+				})),
+	)
+	must(err)
+	log.Println(cfg)
+	svc := sqs.NewFromConfig(cfg)
+	log.Println(svc)
 
-	listResult, err := svc.ListQueues(nil)
+	listResult, err := svc.ListQueues(ctx, nil)
 	must(err)
 	log.Println("ListQueues result:")
 	log.Println(listResult)
 
-	createResult, err := svc.CreateQueue(&sqs.CreateQueueInput{
+	createResult, err := svc.CreateQueue(ctx, &sqs.CreateQueueInput{
 		QueueName: aws.String("testqueue"),
 	})
 	must(err)
@@ -40,7 +58,7 @@ func main() {
 	log.Println(createResult)
 	u := createResult.QueueUrl
 
-	sendResult, err := svc.SendMessage(&sqs.SendMessageInput{
+	sendResult, err := svc.SendMessage(ctx, &sqs.SendMessageInput{
 		MessageBody: aws.String("hell world!"),
 		QueueUrl:    u,
 	})
@@ -55,7 +73,7 @@ func main() {
 	}
 	b, err := json.Marshal(d)
 	must(err)
-	sendResult, err = svc.SendMessage(&sqs.SendMessageInput{
+	sendResult, err = svc.SendMessage(ctx, &sqs.SendMessageInput{
 		MessageBody: aws.String(string(b)),
 		QueueUrl:    u,
 	})
@@ -63,24 +81,17 @@ func main() {
 	log.Println("SendMessage result:")
 	log.Println(sendResult)
 
-	recvResult, err := svc.ReceiveMessage(&sqs.ReceiveMessageInput{
+	recvResult, err := svc.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 		QueueUrl: u,
 	})
 	must(err)
 	log.Println("ReceiveMessage result:")
 	log.Println(recvResult)
 
-	recvResult, err = svc.ReceiveMessage(&sqs.ReceiveMessageInput{
+	recvResult, err = svc.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 		QueueUrl: u,
 	})
 	must(err)
 	log.Println("ReceiveMessage result:")
 	log.Println(recvResult)
-
-	deleteResult, err := svc.DeleteQueue(&sqs.DeleteQueueInput{
-		QueueUrl: u,
-	})
-	must(err)
-	log.Println("DeleteQueue result:")
-	log.Println(deleteResult)
 }
