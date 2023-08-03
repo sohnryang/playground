@@ -31,6 +31,17 @@ const enableToggleButtonText = computed(() => {
 })
 
 const fontSize = ref(10)
+
+const challenges = ["JLVM", "Stylish Memo", "Big Fan"]
+const messages = ref([
+  { title: "Hello", content: "world" },
+  { title: "Goodbye", content: "hell" },
+  { title: "What", content: "is happening?" },
+])
+
+const censoredMessages = computed(() => {
+  return messages.value.filter((m) => !m.content.includes("hell"))
+})
 </script>
 
 <template>
@@ -70,6 +81,26 @@ const fontSize = ref(10)
   </p>
   <button @click="fontSize += 10">Increase <code>fontSize</code></button>
   <button @click="fontSize -= 10">Decrease <code>fontSize</code></button>
+
+  <h2>List Rendering</h2>
+  <p>List of CTF challenges</p>
+  <ol>
+    <li v-for="chall of challenges">
+      {{ chall }}
+    </li>
+  </ol>
+
+  <li v-for="({ title, content }, index) of messages">
+    Index {{ index }} -- {{ title }}: {{ content }}
+  </li>
+
+  <p>Counting to 10:</p>
+  <div v-for="n in 10">{{ n }}</div>
+
+  <p>Censored messages</p>
+  <li v-for="({ title, content }, index) of censoredMessages">
+    Index {{ index }} -- {{ title }}: {{ content }}
+  </li>
 </template>
 
 <style scoped>
