@@ -9,6 +9,9 @@ class Question(models.Model):
     pub_date = models.DateTimeField("date published")
 
     def __str__(self):
+        return self.question_text
+
+    def __repr__(self):
         return f"Question({self.question_text}, {self.pub_date})"
 
     def was_published_recently(self):
@@ -21,4 +24,7 @@ class Choice(models.Model):
     votes = models.IntegerField(default=0)  # type: ignore
 
     def __str__(self):
+        return self.choice_text
+
+    def __repr__(self):
         return f"Choice({self.question}, {self.choice_text}, {self.votes})"
