@@ -42,6 +42,16 @@ const messages = ref([
 const censoredMessages = computed(() => {
   return messages.value.filter((m) => !m.content.includes("hell"))
 })
+
+function greet() {
+  alert("Hi!")
+}
+
+function say(message: string) {
+  alert(`Said: ${message}`)
+}
+
+const eventButtonText = ref<string>("Not clicked")
 </script>
 
 <template>
@@ -101,6 +111,12 @@ const censoredMessages = computed(() => {
   <li v-for="({ title, content }, index) of censoredMessages">
     Index {{ index }} -- {{ title }}: {{ content }}
   </li>
+
+  <h2>Event Handling</h2>
+  <button @click="greet">Greet</button>
+  <button @click="say('hi')">Say "hi"</button>
+  <input type="text" @keypress.enter="greet">
+  <textarea cols="30" rows="10" @keypress.enter.prevent="greet"></textarea>
 </template>
 
 <style scoped>
