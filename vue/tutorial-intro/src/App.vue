@@ -52,6 +52,11 @@ function say(message: string) {
 }
 
 const eventButtonText = ref<string>("Not clicked")
+
+const inputFieldText = ref<string>();
+const isChecked = ref<boolean>(true);
+const problemAttributes = ref<string[]>([]);
+const radioType = ref<string>("FM");
 </script>
 
 <template>
@@ -117,6 +122,26 @@ const eventButtonText = ref<string>("Not clicked")
   <button @click="say('hi')">Say "hi"</button>
   <input type="text" @keypress.enter="greet">
   <textarea cols="30" rows="10" @keypress.enter.prevent="greet"></textarea>
+
+  <h2>Form Input Bindings</h2>
+  <input type="text" v-model="inputFieldText" />
+  <p>Message is: {{ inputFieldText }}</p>
+  <input type="checkbox" id="checkbox" v-model="isChecked" />
+  <label for="checkbox">{{ isChecked }}</label>
+  <p>Problem attributes: {{ problemAttributes }}</p>
+  <input type="checkbox" id="guessy" value="Guessy" v-model="problemAttributes">
+  <label for="guessy">Guessy</label>
+  <br>
+  <input type="checkbox" id="hard" value="Hard" v-model="problemAttributes">
+  <label for="hard">Hard</label>
+  <br>
+  <input type="checkbox" id="zeroday" value="0-day" v-model="problemAttributes">
+  <label for="zeroday">0-day</label>
+  <p>Radio Type: {{ radioType }}</p>
+  <input type="radio" id="am" value="AM" v-model="radioType">
+  <label for="am">AM</label>
+  <input type="radio" id="fm" value="FM" v-model="radioType">
+  <label for="fm">FM</label>
 </template>
 
 <style scoped>
