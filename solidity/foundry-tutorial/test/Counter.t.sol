@@ -17,6 +17,19 @@ contract CounterTest is Test {
         assertEq(counter.number(), 1);
     }
 
+    function test_ExpectEmit_Increment() public {
+        vm.expectEmit(false, false, false, true);
+        emit Counter.Incremented(1);
+        counter.increment();
+    }
+
+    function test_ExpectEmit_Decrement() public {
+        counter.setNumber(1);
+        vm.expectEmit(false, false, false, true);
+        emit Counter.Decremented(0);
+        counter.derecrement();
+    }
+
     function test_IncrementAsNotOwner() public {
         vm.prank(address(0));
         counter.increment();
