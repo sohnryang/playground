@@ -2,12 +2,14 @@ const express = require("express");
 const morgan = require("morgan");
 const session = require("express-session");
 const bodyParser = require("body-parser");
-const app = express();
+const path = require("path");
 
+const app = express();
 app.use(morgan("combined"));
 app.set("view engine", "pug");
 app.use(session({ secret: "totally secret" }));
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use("/static", express.static(path.join(__dirname, "public")));
 
 function isSignedIn(req, res, next) {
   if (req.session.user) {
