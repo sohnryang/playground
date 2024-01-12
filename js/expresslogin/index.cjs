@@ -20,11 +20,11 @@ function isSignedIn(req, res, next) {
 }
 
 app.get("/", (req, res) => {
-  res.render("index", { user: req.session.user });
+  res.render("index", { user: req.session.user, title: "Index" });
 });
 
 app.get("/signin", (_, res) => {
-  res.render("signin");
+  res.render("signin", { title: "Sign In" });
 });
 
 app.post("/signin", (req, res) => {
@@ -40,7 +40,7 @@ app.get("/signout", (req, res) => {
 });
 
 app.get("/secret", isSignedIn, (_, res) => {
-  res.render("secret");
+  res.render("secret", { title: "Index" });
 });
 
 app.listen(3000, () => {

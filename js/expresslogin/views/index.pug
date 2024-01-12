@@ -1,12 +1,11 @@
-html
-  head
-    title= "Index"
-  body
-    h1= "Simple Web App"
-    if user
-      p Hello #{user}
-      a(href="/signout") Sign out
-    else
-      a(href="/signin") Sign in
-    br
-    a(href="/secret") Secret
+extends base
+
+block content
+  h1= "Index"
+  if user
+    p Hello #{user}
+    a(href="/signout") Sign out
+  else
+    a(href="/signin") Sign in
+  br
+  a(href="/secret") Secret
