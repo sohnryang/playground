@@ -1,5 +1,12 @@
 html
   head
-    title= "Title"
+    title= "Index"
   body
-    h1= "Hell world!"
+    h1= "Simple Web App"
+    if user
+      p Hello #{user}
+      a(href="/signout") Sign out
+    else
+      a(href="/signin") Sign in
+    br
+    a(href="/secret") Secret
