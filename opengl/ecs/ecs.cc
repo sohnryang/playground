@@ -50,7 +50,11 @@ struct Transform {
 namespace systems {
 class System {
 public:
-  virtual void update(struct Registry &registry, float delta_time) = 0;
+  virtual bool should_apply(struct Registry &registry,
+                            entities::EntityId id) = 0;
+  virtual void update_single(struct Registry &registry, entities::EntityId id,
+                             float delta_time) = 0;
+  virtual void update(struct Registry &registry, float delta_time);
   virtual ~System() {}
 };
 
@@ -99,24 +103,33 @@ struct Registry {
   }
 };
 
+void System::update(Registry &registry, float delta_time) {
+  for (entities::EntityId i = 0; i < registry.manager.end_id(); i++) {
+    if (!should_apply(registry, i))
+      continue;
+    update_single(registry, i, delta_time);
+  }
+}
+
 class Transform : public System {
 public:
-  void update(Registry &registry, float delta_time) override {
-    for (entities::EntityId i = 0; i < registry.manager.end_id(); i++) {
-      if (registry.transforms.count(i)) {
-        auto &disp = registry.transforms[i].displacement;
-        auto &vel = registry.transforms[i].velocity;
-        disp += delta_time * registry.transforms[i].velocity;
-        if (disp[0] < -1)
-          vel[0] = abs(vel[0]);
-        else if (disp[0] > 1)
-          vel[0] = -abs(vel[0]);
-        if (disp[1] < -1)
-          vel[1] = abs(vel[1]);
-        else if (disp[1] > 1)
-          vel[1] = -abs(vel[1]);
-      }
-    }
+  bool should_apply(Registry &registry, entities::EntityId id) override {
+    return registry.transforms.count(id);
+  }
+
+  void update_single(Registry &registry, entities::EntityId i,
+                     float delta_time) override {
+    auto &disp = registry.transforms[i].displacement;
+    auto &vel = registry.transforms[i].velocity;
+    disp += delta_time * registry.transforms[i].velocity;
+    if (disp[0] < -1)
+      vel[0] = abs(vel[0]);
+    else if (disp[0] > 1)
+      vel[0] = -abs(vel[0]);
+    if (disp[1] < -1)
+      vel[1] = abs(vel[1]);
+    else if (disp[1] > 1)
+      vel[1] = -abs(vel[1]);
   }
 };
 
@@ -129,27 +142,36 @@ public:
     glClearDepth(1);
   }
 
+  bool should_apply(Registry &registry, entities::EntityId id) override {
+    return registry.polygons.count(id) && registry.colors.count(id);
+  }
+
   void update(Registry &registry, float delta_time) override {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (entities::EntityId i = 0; i < registry.manager.end_id(); i++)
-      if (registry.polygons.count(i) && registry.colors.count(i)) {
-        glColor3f(registry.colors[i].r, registry.colors[i].g,
-                  registry.colors[i].b);
-        glBegin(GL_POLYGON);
-        for (const auto &v : registry.polygons[i].vertices) {
-          glm::vec3 transformed(v);
-          if (registry.transforms.count(i)) {
-            glm::mat4 mat = glm::translate(glm::mat4(1),
-                                           registry.transforms[i].displacement);
-            transformed = glm::vec3(mat * v);
-          }
-          glVertex3f(transformed[0], transformed[1], transformed[2]);
-        }
-        glEnd();
-      }
+    for (entities::EntityId i = 0; i < registry.manager.end_id(); i++) {
+      if (!should_apply(registry, i))
+        continue;
+      update_single(registry, i, delta_time);
+    }
 
     glutSwapBuffers();
+  }
+
+  void update_single(Registry &registry, entities::EntityId i,
+                     float delta_time) override {
+    glColor3f(registry.colors[i].r, registry.colors[i].g, registry.colors[i].b);
+    glBegin(GL_POLYGON);
+    for (const auto &v : registry.polygons[i].vertices) {
+      glm::vec3 transformed(v);
+      if (registry.transforms.count(i)) {
+        glm::mat4 mat =
+            glm::translate(glm::mat4(1), registry.transforms[i].displacement);
+        transformed = glm::vec3(mat * v);
+      }
+      glVertex3f(transformed[0], transformed[1], transformed[2]);
+    }
+    glEnd();
   }
 };
 }; // namespace systems
