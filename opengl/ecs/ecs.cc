@@ -15,6 +15,7 @@
 #include <glm/glm.hpp>
 
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace entities {
 using EntityId = size_t;
@@ -161,17 +162,18 @@ public:
   void update_single(Registry &registry, entities::EntityId i,
                      float delta_time) override {
     glColor3f(registry.colors[i].r, registry.colors[i].g, registry.colors[i].b);
+    glPushMatrix();
+    if (registry.transforms.count(i)) {
+      glm::mat4 mat =
+          glm::translate(glm::mat4(1), registry.transforms[i].displacement);
+      glLoadMatrixf(glm::value_ptr(mat));
+    } else
+      glLoadIdentity();
     glBegin(GL_POLYGON);
-    for (const auto &v : registry.polygons[i].vertices) {
-      glm::vec3 transformed(v);
-      if (registry.transforms.count(i)) {
-        glm::mat4 mat =
-            glm::translate(glm::mat4(1), registry.transforms[i].displacement);
-        transformed = glm::vec3(mat * v);
-      }
-      glVertex3f(transformed[0], transformed[1], transformed[2]);
-    }
+    for (const auto &v : registry.polygons[i].vertices)
+      glVertex3f(v[0], v[1], v[2]);
     glEnd();
+    glPopMatrix();
   }
 };
 }; // namespace systems
