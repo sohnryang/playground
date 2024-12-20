@@ -71,10 +71,6 @@ void scalar_kernel() {
 void vector_kernel() {
   for (int nl = 0; nl < ITER; nl++) {
     float b_carry = b[0];
-    union {
-      unsigned u;
-      float f;
-    } carry;
     for (int i = 1; i <= LEN_1D + 1 - 16 * 2; i += 16) {
       const __m512 b_lookahead_vec = _mm512_loadu_ps(&b[i + 1]);
       const __m512 c_vec = _mm512_loadu_ps(&c[i]);
