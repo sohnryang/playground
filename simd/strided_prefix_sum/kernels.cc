@@ -55,7 +55,7 @@ template <> void kernel_avx512<float, 2>(float *arr, int n) {
 }
 
 template <> void kernel_avx512<float, 4>(float *arr, int n) {
-  __m128 sums = _mm_setzero_ps();
+  __m128 last_part = _mm_setzero_ps();
   int i;
   const __m512 ZERO_PS = _mm512_setzero_ps();
   for (i = 0; i + 16 <= n; i += 16) {
@@ -63,9 +63,9 @@ template <> void kernel_avx512<float, 4>(float *arr, int n) {
     x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 4));
     x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 8));
 
-    x = _mm512_add_ps(_mm512_broadcast_f32x4(sums), x);
+    x = _mm512_add_ps(_mm512_broadcast_f32x4(last_part), x);
     _mm512_storeu_ps(&arr[i], x);
-    sums = _mm512_extractf32x4_ps(x, 3);
+    last_part = _mm512_extractf32x4_ps(x, 3);
   }
 
   for (i = i ? i : 4; i < n; i++)
