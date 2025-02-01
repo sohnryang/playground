@@ -37,6 +37,9 @@ BENCHMARK(BM<float, kernel_scalar<float, 4>>)
 BENCHMARK(BM<float, kernel_scalar<float, 5>>)
     ->RangeMultiplier(MULTIPLIER)
     ->Range(RANGE_START, RANGE_END);
+BENCHMARK(BM<float, kernel_scalar<float, 6>>)
+    ->RangeMultiplier(MULTIPLIER)
+    ->Range(RANGE_START, RANGE_END);
 BENCHMARK(BM<uint32_t, kernel_scalar<uint32_t, 2>>)
     ->RangeMultiplier(MULTIPLIER)
     ->Range(RANGE_START, RANGE_END);
@@ -49,16 +52,25 @@ BENCHMARK(BM<uint32_t, kernel_scalar<uint32_t, 4>>)
 BENCHMARK(BM<uint32_t, kernel_scalar<uint32_t, 5>>)
     ->RangeMultiplier(MULTIPLIER)
     ->Range(RANGE_START, RANGE_END);
+BENCHMARK(BM<uint32_t, kernel_scalar<uint32_t, 6>>)
+    ->RangeMultiplier(MULTIPLIER)
+    ->Range(RANGE_START, RANGE_END);
 BENCHMARK(BM<float, kernel_autovec<float, 2>>)
     ->RangeMultiplier(MULTIPLIER)
     ->Range(RANGE_START, RANGE_END);
 BENCHMARK(BM<float, kernel_autovec<float, 4>>)
     ->RangeMultiplier(MULTIPLIER)
     ->Range(RANGE_START, RANGE_END);
+BENCHMARK(BM<float, kernel_autovec<float, 6>>)
+    ->RangeMultiplier(MULTIPLIER)
+    ->Range(RANGE_START, RANGE_END);
 BENCHMARK(BM<uint32_t, kernel_autovec<uint32_t, 2>>)
     ->RangeMultiplier(MULTIPLIER)
     ->Range(RANGE_START, RANGE_END);
 BENCHMARK(BM<uint32_t, kernel_autovec<uint32_t, 4>>)
+    ->RangeMultiplier(MULTIPLIER)
+    ->Range(RANGE_START, RANGE_END);
+BENCHMARK(BM<uint32_t, kernel_autovec<uint32_t, 6>>)
     ->RangeMultiplier(MULTIPLIER)
     ->Range(RANGE_START, RANGE_END);
 BENCHMARK(BM<float, kernel_avx512<float, 2>>)
