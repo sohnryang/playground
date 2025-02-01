@@ -1,422 +1,115 @@
-#include "gmock/gmock.h"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
 #include <cstdint>
+#include <tuple>
+#include <type_traits>
 
 #include "kernels.h"
 
 using namespace testing;
 
-TEST(Stride2FP32, Constants) {
+template <typename Types> class StridedPsumTest : public Test {};
+
+using Implementations =
+    Types<std::tuple<float, std::integral_constant<int, 2>>,
+          std::tuple<float, std::integral_constant<int, 3>>,
+          std::tuple<float, std::integral_constant<int, 4>>,
+          std::tuple<float, std::integral_constant<int, 5>>,
+          std::tuple<float, std::integral_constant<int, 6>>,
+          std::tuple<uint32_t, std::integral_constant<int, 2>>,
+          std::tuple<uint32_t, std::integral_constant<int, 3>>,
+          std::tuple<uint32_t, std::integral_constant<int, 4>>,
+          std::tuple<uint32_t, std::integral_constant<int, 5>>,
+          std::tuple<uint32_t, std::integral_constant<int, 6>>>;
+TYPED_TEST_SUITE(StridedPsumTest, Implementations);
+
+TYPED_TEST(StridedPsumTest, Ones) {
+  using T = std::tuple_element_t<0, decltype(TypeParam())>;
+  using S = std::tuple_element_t<1, decltype(TypeParam())>;
+
   constexpr int LEN = 47;
-  float inputs[LEN];
-  std::fill_n(inputs, LEN, 1.0f);
-
-  float scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 2>(scalar_out, LEN);
-  kernel_avx512<float, 2>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
-}
-
-TEST(Stride2Int32, Ones) {
-  constexpr int LEN = 47;
-  uint32_t inputs[LEN];
+  T inputs[LEN];
   std::fill_n(inputs, LEN, 1);
 
-  uint32_t scalar_out[LEN], avx512_out[LEN];
+  T scalar_out[LEN], avx512_out[LEN];
   std::copy_n(inputs, LEN, scalar_out);
   std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 2>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 2>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
-}
-
-TEST(Stride3FP32, Ones) {
-  constexpr int LEN = 47;
-  float inputs[LEN];
-  std::fill_n(inputs, LEN, 1.0f);
-
-  float scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 3>(scalar_out, LEN);
-  kernel_avx512<float, 3>(avx512_out, LEN);
+  kernel_scalar<T, S::value>(scalar_out, LEN);
+  kernel_avx512<T, S::value>(avx512_out, LEN);
 
   EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
 }
 
-TEST(Stride3FP32, Alternating2) {
+TYPED_TEST(StridedPsumTest, Alternating2) {
+  using T = std::tuple_element_t<0, decltype(TypeParam())>;
+  using S = std::tuple_element_t<1, decltype(TypeParam())>;
+
   constexpr int LEN = 47;
-  float inputs[LEN];
+  T inputs[LEN];
   for (int i = 0; i < LEN; i++)
     inputs[i] = i % 2 + 1;
 
-  float scalar_out[LEN], avx512_out[LEN];
+  T scalar_out[LEN], avx512_out[LEN];
   std::copy_n(inputs, LEN, scalar_out);
   std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 3>(scalar_out, LEN);
-  kernel_avx512<float, 3>(avx512_out, LEN);
+  kernel_scalar<T, S::value>(scalar_out, LEN);
+  kernel_avx512<T, S::value>(avx512_out, LEN);
 
   EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
 }
 
-TEST(Stride3FP32, Alternating3) {
+TYPED_TEST(StridedPsumTest, Alternating3) {
+  using T = std::tuple_element_t<0, decltype(TypeParam())>;
+  using S = std::tuple_element_t<1, decltype(TypeParam())>;
+
   constexpr int LEN = 47;
-  float inputs[LEN];
+  T inputs[LEN];
   for (int i = 0; i < LEN; i++)
     inputs[i] = i % 3 + 1;
 
-  float scalar_out[LEN], avx512_out[LEN];
+  T scalar_out[LEN], avx512_out[LEN];
   std::copy_n(inputs, LEN, scalar_out);
   std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 3>(scalar_out, LEN);
-  kernel_avx512<float, 3>(avx512_out, LEN);
+  kernel_scalar<T, S::value>(scalar_out, LEN);
+  kernel_avx512<T, S::value>(avx512_out, LEN);
 
   EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
 }
 
-TEST(Stride3FP32, Alternating5) {
+TYPED_TEST(StridedPsumTest, Alternating5) {
+  using T = std::tuple_element_t<0, decltype(TypeParam())>;
+  using S = std::tuple_element_t<1, decltype(TypeParam())>;
+
   constexpr int LEN = 47;
-  float inputs[LEN];
+  T inputs[LEN];
   for (int i = 0; i < LEN; i++)
     inputs[i] = i % 5 + 1;
 
-  float scalar_out[LEN], avx512_out[LEN];
+  T scalar_out[LEN], avx512_out[LEN];
   std::copy_n(inputs, LEN, scalar_out);
   std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 3>(scalar_out, LEN);
-  kernel_avx512<float, 3>(avx512_out, LEN);
+  kernel_scalar<T, S::value>(scalar_out, LEN);
+  kernel_avx512<T, S::value>(avx512_out, LEN);
 
   EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
 }
 
-TEST(Stride3Int32, Ones) {
+TYPED_TEST(StridedPsumTest, Alternating7) {
+  using T = std::tuple_element_t<0, decltype(TypeParam())>;
+  using S = std::tuple_element_t<1, decltype(TypeParam())>;
+
   constexpr int LEN = 47;
-  uint32_t inputs[LEN];
-  std::fill_n(inputs, LEN, 1);
-
-  uint32_t scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 3>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 3>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
-}
-
-TEST(Stride3Int32, Alternating2) {
-  constexpr int LEN = 47;
-  uint32_t inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 2 + 1;
-
-  uint32_t scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 3>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 3>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
-}
-
-TEST(Stride3Int32, Alternating3) {
-  constexpr int LEN = 47;
-  uint32_t inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 3 + 1;
-
-  uint32_t scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 3>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 3>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
-}
-
-TEST(Stride3Int32, Alternating5) {
-  constexpr int LEN = 47;
-  uint32_t inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 5 + 1;
-
-  uint32_t scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 3>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 3>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
-}
-
-TEST(Stride4FP32, Ones) {
-  constexpr int LEN = 47;
-  float inputs[LEN];
-  std::fill_n(inputs, LEN, 1.0f);
-
-  float scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 4>(scalar_out, LEN);
-  kernel_avx512<float, 4>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
-}
-
-TEST(Stride4FP32, Alternating2) {
-  constexpr int LEN = 47;
-  float inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 2 + 1;
-
-  float scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 4>(scalar_out, LEN);
-  kernel_avx512<float, 4>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
-}
-
-TEST(Stride4FP32, Alternating3) {
-  constexpr int LEN = 47;
-  float inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 3 + 1;
-
-  float scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 4>(scalar_out, LEN);
-  kernel_avx512<float, 4>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
-}
-
-TEST(Stride4FP32, Alternating5) {
-  constexpr int LEN = 47;
-  float inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 5 + 1;
-
-  float scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 4>(scalar_out, LEN);
-  kernel_avx512<float, 4>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
-}
-
-TEST(Stride5FP32, Ones) {
-  constexpr int LEN = 47;
-  float inputs[LEN];
-  std::fill_n(inputs, LEN, 1.0f);
-
-  float scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 5>(scalar_out, LEN);
-  kernel_avx512<float, 5>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
-}
-
-TEST(Stride5FP32, Alternating2) {
-  constexpr int LEN = 47;
-  float inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 2 + 1;
-
-  float scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 5>(scalar_out, LEN);
-  kernel_avx512<float, 5>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
-}
-
-TEST(Stride5FP32, Alternating3) {
-  constexpr int LEN = 47;
-  float inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 3 + 1;
-
-  float scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 5>(scalar_out, LEN);
-  kernel_avx512<float, 5>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
-}
-
-TEST(Stride5FP32, Alternating5) {
-  constexpr int LEN = 47;
-  float inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 5 + 1;
-
-  float scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 5>(scalar_out, LEN);
-  kernel_avx512<float, 5>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
-}
-
-TEST(Stride5FP32, Alternating7) {
-  constexpr int LEN = 47;
-  float inputs[LEN];
+  T inputs[LEN];
   for (int i = 0; i < LEN; i++)
     inputs[i] = i % 7 + 1;
 
-  float scalar_out[LEN], avx512_out[LEN];
+  T scalar_out[LEN], avx512_out[LEN];
   std::copy_n(inputs, LEN, scalar_out);
   std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<float, 5>(scalar_out, LEN);
-  kernel_avx512<float, 5>(avx512_out, LEN);
+  kernel_scalar<T, S::value>(scalar_out, LEN);
+  kernel_avx512<T, S::value>(avx512_out, LEN);
 
   EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
-}
-
-TEST(Stride4Int32, Ones) {
-  constexpr int LEN = 47;
-  uint32_t inputs[LEN];
-  std::fill_n(inputs, LEN, 1);
-
-  uint32_t scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 4>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 4>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
-}
-
-TEST(Stride4Int32, Alternating2) {
-  constexpr int LEN = 47;
-  uint32_t inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 2 + 1;
-
-  uint32_t scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 4>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 4>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
-}
-
-TEST(Stride4Int32, Alternating3) {
-  constexpr int LEN = 47;
-  uint32_t inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 3 + 1;
-
-  uint32_t scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 4>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 4>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
-}
-
-TEST(Stride4Int32, Alternating5) {
-  constexpr int LEN = 47;
-  uint32_t inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 5 + 1;
-
-  uint32_t scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 4>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 4>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
-}
-
-TEST(Stride5Int32, Ones) {
-  constexpr int LEN = 47;
-  uint32_t inputs[LEN];
-  std::fill_n(inputs, LEN, 1);
-
-  uint32_t scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 5>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 5>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
-}
-
-TEST(Stride5Int32, Alternating2) {
-  constexpr int LEN = 47;
-  uint32_t inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 2 + 1;
-
-  uint32_t scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 5>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 5>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
-}
-
-TEST(Stride5Int32, Alternating3) {
-  constexpr int LEN = 47;
-  uint32_t inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 3 + 1;
-
-  uint32_t scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 5>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 5>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
-}
-
-TEST(Stride5Int32, Alternating5) {
-  constexpr int LEN = 47;
-  uint32_t inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 5 + 1;
-
-  uint32_t scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 5>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 5>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
-}
-
-TEST(Stride5Int32, Alternating7) {
-  constexpr int LEN = 47;
-  uint32_t inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 7 + 1;
-
-  uint32_t scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<uint32_t, 5>(scalar_out, LEN);
-  kernel_avx512<uint32_t, 5>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, ContainerEq(scalar_out));
 }
