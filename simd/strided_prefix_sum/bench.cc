@@ -85,6 +85,9 @@ BENCHMARK(BM<float, kernel_avx512<float, 4>>)
 BENCHMARK(BM<float, kernel_avx512<float, 5>>)
     ->RangeMultiplier(MULTIPLIER)
     ->Range(RANGE_START, RANGE_END);
+BENCHMARK(BM<float, kernel_avx512<float, 6>>)
+    ->RangeMultiplier(MULTIPLIER)
+    ->Range(RANGE_START, RANGE_END);
 BENCHMARK(BM<uint32_t, kernel_avx512<uint32_t, 2>>)
     ->RangeMultiplier(MULTIPLIER)
     ->Range(RANGE_START, RANGE_END);
@@ -95,6 +98,9 @@ BENCHMARK(BM<uint32_t, kernel_avx512<uint32_t, 4>>)
     ->RangeMultiplier(MULTIPLIER)
     ->Range(RANGE_START, RANGE_END);
 BENCHMARK(BM<uint32_t, kernel_avx512<uint32_t, 5>>)
+    ->RangeMultiplier(MULTIPLIER)
+    ->Range(RANGE_START, RANGE_END);
+BENCHMARK(BM<uint32_t, kernel_avx512<uint32_t, 6>>)
     ->RangeMultiplier(MULTIPLIER)
     ->Range(RANGE_START, RANGE_END);
 
