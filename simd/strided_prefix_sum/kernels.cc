@@ -13,9 +13,11 @@ template <typename T, int S> void kernel_scalar(T *arr, int n) {
 template void kernel_scalar<float, 2>(float *arr, int n);
 template void kernel_scalar<float, 3>(float *arr, int n);
 template void kernel_scalar<float, 4>(float *arr, int n);
+template void kernel_scalar<float, 5>(float *arr, int n);
 template void kernel_scalar<uint32_t, 2>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 3>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 4>(uint32_t *arr, int n);
+template void kernel_scalar<uint32_t, 5>(uint32_t *arr, int n);
 
 template <typename T, int S> void kernel_autovec(T *arr, int n) {
 #pragma clang loop vectorize(enable)
