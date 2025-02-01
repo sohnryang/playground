@@ -18,6 +18,7 @@ template void kernel_scalar<uint32_t, 3>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 4>(uint32_t *arr, int n);
 
 template <typename T, int S> void kernel_autovec(T *arr, int n) {
+#pragma clang loop vectorize(enable)
   for (int i = S; i < n; i++)
     arr[i] += arr[i - S];
 }
