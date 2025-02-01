@@ -10,7 +10,18 @@
 
 using namespace testing;
 
-template <typename Types> class StridedPsumTest : public Test {};
+template <typename Types> class StridedPsumTest : public Test {
+public:
+  using T = std::tuple_element_t<0, Types>;
+  using S = std::tuple_element_t<1, Types>;
+
+  void copy_and_run(const T *input, T *scalar_out, T *avx512_out, int n) {
+    std::copy_n(input, n, scalar_out);
+    std::copy_n(input, n, avx512_out);
+    kernel_scalar<T, S::value>(scalar_out, n);
+    kernel_avx512<T, S::value>(avx512_out, n);
+  }
+};
 
 using Implementations =
     Types<std::tuple<float, std::integral_constant<int, 2>>,
@@ -27,89 +38,19 @@ TYPED_TEST_SUITE(StridedPsumTest, Implementations);
 
 TYPED_TEST(StridedPsumTest, Ones) {
   using T = std::tuple_element_t<0, decltype(TypeParam())>;
-  using S = std::tuple_element_t<1, decltype(TypeParam())>;
-
   constexpr int LEN = 47;
-  T inputs[LEN];
-  std::fill_n(inputs, LEN, 1);
-
-  T scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<T, S::value>(scalar_out, LEN);
-  kernel_avx512<T, S::value>(avx512_out, LEN);
-
+  T input[LEN], scalar_out[LEN], avx512_out[LEN];
+  std::fill_n(input, LEN, 1);
+  this->copy_and_run(input, scalar_out, avx512_out, LEN);
   EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
 }
 
-TYPED_TEST(StridedPsumTest, Alternating2) {
+TYPED_TEST(StridedPsumTest, Alternating) {
   using T = std::tuple_element_t<0, decltype(TypeParam())>;
-  using S = std::tuple_element_t<1, decltype(TypeParam())>;
-
   constexpr int LEN = 47;
-  T inputs[LEN];
+  T input[LEN], scalar_out[LEN], avx512_out[LEN];
   for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 2 + 1;
-
-  T scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<T, S::value>(scalar_out, LEN);
-  kernel_avx512<T, S::value>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
-}
-
-TYPED_TEST(StridedPsumTest, Alternating3) {
-  using T = std::tuple_element_t<0, decltype(TypeParam())>;
-  using S = std::tuple_element_t<1, decltype(TypeParam())>;
-
-  constexpr int LEN = 47;
-  T inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 3 + 1;
-
-  T scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<T, S::value>(scalar_out, LEN);
-  kernel_avx512<T, S::value>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
-}
-
-TYPED_TEST(StridedPsumTest, Alternating5) {
-  using T = std::tuple_element_t<0, decltype(TypeParam())>;
-  using S = std::tuple_element_t<1, decltype(TypeParam())>;
-
-  constexpr int LEN = 47;
-  T inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 5 + 1;
-
-  T scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<T, S::value>(scalar_out, LEN);
-  kernel_avx512<T, S::value>(avx512_out, LEN);
-
-  EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
-}
-
-TYPED_TEST(StridedPsumTest, Alternating7) {
-  using T = std::tuple_element_t<0, decltype(TypeParam())>;
-  using S = std::tuple_element_t<1, decltype(TypeParam())>;
-
-  constexpr int LEN = 47;
-  T inputs[LEN];
-  for (int i = 0; i < LEN; i++)
-    inputs[i] = i % 7 + 1;
-
-  T scalar_out[LEN], avx512_out[LEN];
-  std::copy_n(inputs, LEN, scalar_out);
-  std::copy_n(inputs, LEN, avx512_out);
-  kernel_scalar<T, S::value>(scalar_out, LEN);
-  kernel_avx512<T, S::value>(avx512_out, LEN);
-
+    input[i] = i % 7 + 1;
+  this->copy_and_run(input, scalar_out, avx512_out, LEN);
   EXPECT_THAT(avx512_out, Pointwise(FloatEq(), scalar_out));
 }
