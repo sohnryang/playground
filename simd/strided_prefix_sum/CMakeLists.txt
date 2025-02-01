@@ -14,7 +14,7 @@ FetchContent_Declare(
   GIT_TAG v1.9.0
 )
 FetchContent_MakeAvailable(google_benchmark)
-add_executable(driver driver.cc kernels.cc)
-target_link_libraries(driver benchmark::benchmark)
-target_compile_options(driver PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-O3>" PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-march=native>" PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-ffast-math>")
-set_property(TARGET driver PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+add_executable(bench bench.cc kernels.cc)
+target_link_libraries(bench benchmark::benchmark)
+target_compile_options(bench PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-O3>" PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-march=native>" PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-ffast-math>")
+set_property(TARGET bench PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
