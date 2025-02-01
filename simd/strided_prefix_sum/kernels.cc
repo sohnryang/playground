@@ -105,6 +105,27 @@ template <> void kernel_avx512<float, 4>(float *arr, int n) {
     arr[i] += arr[i - 4];
 }
 
+template <> void kernel_avx512<float, 5>(float *arr, int n) {
+  __m256 last_part = _mm256_setzero_ps();
+  int i;
+  const __m512 ZERO_PS = _mm512_setzero_ps();
+  const __m512i IDX =
+      _mm512_set_epi32(3, 7, 6, 5, 4, 3, 7, 6, 5, 4, 3, 7, 6, 5, 4, 3);
+  for (i = 0; i + 16 <= n; i += 16) {
+    __m512 x = _mm512_loadu_ps(&arr[i]);
+    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 5));
+    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 10));
+    const __m512 carry =
+        _mm512_permutexvar_ps(IDX, _mm512_castps256_ps512(last_part));
+    x = _mm512_add_ps(carry, x);
+    _mm512_storeu_ps(&arr[i], x);
+    last_part = _mm512_extractf32x8_ps(x, 1);
+  }
+
+  for (i = i ? i : 5; i < n; i++)
+    arr[i] += arr[i - 5];
+}
+
 template <> void kernel_avx512<uint32_t, 2>(uint32_t *arr, int n) {
   uint32_t sum0 = 0, sum1 = 0;
   int i;
@@ -178,4 +199,25 @@ template <> void kernel_avx512<uint32_t, 4>(uint32_t *arr, int n) {
 
   for (i = i ? i : 4; i < n; i++)
     arr[i] += arr[i - 4];
+}
+
+template <> void kernel_avx512<uint32_t, 5>(uint32_t *arr, int n) {
+  __m256i last_part = _mm256_setzero_si256();
+  int i;
+  const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
+  const __m512i IDX =
+      _mm512_set_epi32(3, 7, 6, 5, 4, 3, 7, 6, 5, 4, 3, 7, 6, 5, 4, 3);
+  for (i = 0; i + 16 <= n; i += 16) {
+    __m512i x = _mm512_loadu_epi32(&arr[i]);
+    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 5));
+    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 10));
+    const __m512i carry =
+        _mm512_permutexvar_epi32(IDX, _mm512_castsi256_si512(last_part));
+    x = _mm512_add_epi32(carry, x);
+    _mm512_storeu_epi32(&arr[i], x);
+    last_part = _mm512_extracti32x8_epi32(x, 1);
+  }
+
+  for (i = i ? i : 5; i < n; i++)
+    arr[i] += arr[i - 5];
 }
