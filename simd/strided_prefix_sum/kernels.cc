@@ -16,12 +16,14 @@ template void kernel_scalar<float, 4>(float *arr, int n);
 template void kernel_scalar<float, 5>(float *arr, int n);
 template void kernel_scalar<float, 6>(float *arr, int n);
 template void kernel_scalar<float, 7>(float *arr, int n);
+template void kernel_scalar<float, 8>(float *arr, int n);
 template void kernel_scalar<uint32_t, 2>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 3>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 4>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 5>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 6>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 7>(uint32_t *arr, int n);
+template void kernel_scalar<uint32_t, 8>(uint32_t *arr, int n);
 
 template <typename T, int S> void kernel_autovec(T *arr, int n) {
 #pragma clang loop vectorize(enable)
@@ -32,9 +34,11 @@ template <typename T, int S> void kernel_autovec(T *arr, int n) {
 template void kernel_autovec<float, 2>(float *arr, int n);
 template void kernel_autovec<float, 4>(float *arr, int n);
 template void kernel_autovec<float, 6>(float *arr, int n);
+template void kernel_autovec<float, 8>(float *arr, int n);
 template void kernel_autovec<uint32_t, 2>(uint32_t *arr, int n);
 template void kernel_autovec<uint32_t, 4>(uint32_t *arr, int n);
 template void kernel_autovec<uint32_t, 6>(uint32_t *arr, int n);
+template void kernel_autovec<uint32_t, 8>(uint32_t *arr, int n);
 
 template <> void kernel_avx512<float, 2>(float *arr, int n) {
   float sum0 = 0, sum1 = 0;
@@ -174,6 +178,24 @@ template <> void kernel_avx512<float, 7>(float *arr, int n) {
     arr[i] += arr[i - 7];
 }
 
+template <> void kernel_avx512<float, 8>(float *arr, int n) {
+  __m256 last_part = _mm256_setzero_ps();
+  int i;
+  const __m512 ZERO_PS = _mm512_setzero_ps();
+  for (i = 0; i + 16 <= n; i += 16) {
+    __m512 x = _mm512_loadu_ps(&arr[i]);
+    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 8));
+    const __m512 carry =
+        _mm512_insertf32x8(_mm512_castps256_ps512(last_part), last_part, 1);
+    x = _mm512_add_ps(carry, x);
+    _mm512_storeu_ps(&arr[i], x);
+    last_part = _mm512_extractf32x8_ps(x, 1);
+  }
+
+  for (i = i ? i : 8; i < n; i++)
+    arr[i] += arr[i - 8];
+}
+
 template <> void kernel_avx512<uint32_t, 2>(uint32_t *arr, int n) {
   uint32_t sum0 = 0, sum1 = 0;
   int i;
@@ -310,4 +332,24 @@ template <> void kernel_avx512<uint32_t, 7>(uint32_t *arr, int n) {
 
   for (i = i ? i : 7; i < n; i++)
     arr[i] += arr[i - 7];
+}
+
+template <> void kernel_avx512<uint32_t, 8>(uint32_t *arr, int n) {
+  __m256i last_part = _mm256_setzero_si256();
+  int i;
+  const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
+  const __m512i IDX =
+      _mm512_set_epi32(2, 1, 7, 6, 5, 4, 3, 2, 1, 7, 6, 5, 4, 3, 2, 1);
+  for (i = 0; i + 16 <= n; i += 16) {
+    __m512i x = _mm512_loadu_epi32(&arr[i]);
+    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 8));
+    const __m512i carry =
+        _mm512_insertf32x8(_mm512_castsi256_si512(last_part), last_part, 1);
+    x = _mm512_add_epi32(carry, x);
+    _mm512_storeu_epi32(&arr[i], x);
+    last_part = _mm512_extracti32x8_epi32(x, 1);
+  }
+
+  for (i = i ? i : 8; i < n; i++)
+    arr[i] += arr[i - 8];
 }
