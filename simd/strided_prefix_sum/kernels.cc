@@ -1,6 +1,8 @@
 #include "kernels.h"
 
+#include <array>
 #include <cstdint>
+#include <type_traits>
 
 #include <immintrin.h>
 
@@ -19,6 +21,11 @@ template void kernel_scalar<float, 7>(float *arr, int n);
 template void kernel_scalar<float, 8>(float *arr, int n);
 template void kernel_scalar<float, 9>(float *arr, int n);
 template void kernel_scalar<float, 10>(float *arr, int n);
+template void kernel_scalar<float, 11>(float *arr, int n);
+template void kernel_scalar<float, 12>(float *arr, int n);
+template void kernel_scalar<float, 13>(float *arr, int n);
+template void kernel_scalar<float, 14>(float *arr, int n);
+template void kernel_scalar<float, 15>(float *arr, int n);
 template void kernel_scalar<uint32_t, 2>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 3>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 4>(uint32_t *arr, int n);
@@ -28,6 +35,11 @@ template void kernel_scalar<uint32_t, 7>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 8>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 9>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 10>(uint32_t *arr, int n);
+template void kernel_scalar<uint32_t, 11>(uint32_t *arr, int n);
+template void kernel_scalar<uint32_t, 12>(uint32_t *arr, int n);
+template void kernel_scalar<uint32_t, 13>(uint32_t *arr, int n);
+template void kernel_scalar<uint32_t, 14>(uint32_t *arr, int n);
+template void kernel_scalar<uint32_t, 15>(uint32_t *arr, int n);
 
 template <typename T, int S> void kernel_autovec(T *arr, int n) {
 #pragma clang loop vectorize(enable)
@@ -40,398 +52,100 @@ template void kernel_autovec<float, 4>(float *arr, int n);
 template void kernel_autovec<float, 6>(float *arr, int n);
 template void kernel_autovec<float, 8>(float *arr, int n);
 template void kernel_autovec<float, 10>(float *arr, int n);
+template void kernel_autovec<float, 12>(float *arr, int n);
+template void kernel_autovec<float, 14>(float *arr, int n);
 template void kernel_autovec<uint32_t, 2>(uint32_t *arr, int n);
 template void kernel_autovec<uint32_t, 4>(uint32_t *arr, int n);
 template void kernel_autovec<uint32_t, 6>(uint32_t *arr, int n);
 template void kernel_autovec<uint32_t, 8>(uint32_t *arr, int n);
 template void kernel_autovec<uint32_t, 10>(uint32_t *arr, int n);
+template void kernel_autovec<uint32_t, 12>(uint32_t *arr, int n);
+template void kernel_autovec<uint32_t, 14>(uint32_t *arr, int n);
 
-template <> void kernel_avx512<float, 2>(float *arr, int n) {
-  float sum0 = 0, sum1 = 0;
-  int i;
-  const __m512 ZERO_PS = _mm512_setzero_ps();
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512 x = _mm512_loadu_ps(&arr[i]);
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 2));
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 4));
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 8));
+alignas(64) constexpr std::array<int, 16 * 14> INDEX_TABLE = []() {
+  std::array<int, 16 * 14> arr{};
+  for (int i = 0; i < 14; i++)
+    for (int j = 0; j < 16; j++) {
+      int stride = i + 2;
+      arr[16 * i + j] = j % stride + 16 - stride;
+    }
+  return arr;
+}();
 
-    const __m512 sum0_broadcasted = _mm512_set1_ps(sum0);
-    const __m512 sum1_broadcasted = _mm512_set1_ps(sum1);
-    x = _mm512_add_ps(
-        _mm512_mask_blend_ps(0xAAAA, sum0_broadcasted, sum1_broadcasted), x);
-    _mm512_storeu_ps(&arr[i], x);
-
-    const __m128 last_part = _mm512_extractf32x4_ps(x, 3);
-    _MM_EXTRACT_FLOAT(sum0, last_part, 2);
-    _MM_EXTRACT_FLOAT(sum1, last_part, 3);
+template <typename T, int S> void kernel_avx512(T *arr, int n) {
+  int i = 0;
+  const __m512i IDX = _mm512_load_epi32(INDEX_TABLE.data() + (S - 2) * 16);
+  if constexpr (std::is_same<T, float>::value) {
+    __m512 last_x = _mm512_setzero_ps();
+    const __m512 ZERO_PS = _mm512_setzero_ps();
+    for (; i + 16 <= n; i += 16) {
+      __m512 x = _mm512_loadu_ps(&arr[i]);
+      if constexpr (S < 4) {
+        x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - S));
+        x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 2 * S));
+        x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 4 * S));
+      } else if (S < 8) {
+        x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - S));
+        x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 2 * S));
+      } else {
+        x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - S));
+      }
+      const __m512 carry = _mm512_permutexvar_ps(IDX, last_x);
+      x = _mm512_add_ps(carry, x);
+      _mm512_storeu_ps(&arr[i], x);
+      last_x = x;
+    }
+  } else if (std::is_same<T, uint32_t>::value) {
+    __m512i last_x = _mm512_setzero_epi32();
+    const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
+    for (; i + 16 <= n; i += 16) {
+      __m512i x = _mm512_loadu_epi32(&arr[i]);
+      if constexpr (S < 4) {
+        x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - S));
+        x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 2 * S));
+        x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 4 * S));
+      } else if (S < 8) {
+        x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - S));
+        x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 2 * S));
+      } else {
+        x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - S));
+      }
+      const __m512i carry = _mm512_permutexvar_epi32(IDX, last_x);
+      x = _mm512_add_epi32(carry, x);
+      _mm512_storeu_epi32(&arr[i], x);
+      last_x = x;
+    }
   }
 
-  for (i = i ? i : 2; i < n; i++)
-    arr[i] += arr[i - 2];
+  for (i = i ? i : S; i < n; i++)
+    arr[i] += arr[i - S];
 }
 
-template <> void kernel_avx512<float, 3>(float *arr, int n) {
-  __m128 last_part = _mm_setzero_ps();
-  int i;
-  const __m512 ZERO_PS = _mm512_setzero_ps();
-  const __m128i IDX0 = _mm_set_epi32(1, 3, 2, 1);
-  const __m128i IDX1 = _mm_set_epi32(2, 1, 3, 2);
-  const __m128i IDX2 = _mm_set_epi32(3, 2, 1, 3);
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512 x = _mm512_loadu_ps(&arr[i]);
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 3));
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 6));
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 12));
-
-    const __m128 carry_low0 = _mm_permutevar_ps(last_part, IDX0);
-    const __m128 carry_low1 = _mm_permutevar_ps(last_part, IDX1);
-    const __m128 carry_high0 = _mm_permutevar_ps(last_part, IDX2);
-    const __m128 carry_high1 = carry_low0;
-    const __m256 carry_low =
-        _mm256_insertf32x4(_mm256_castps128_ps256(carry_low0), carry_low1, 1);
-    const __m256 carry_high =
-        _mm256_insertf32x4(_mm256_castps128_ps256(carry_high0), carry_high1, 1);
-    const __m512 carry =
-        _mm512_insertf32x8(_mm512_castps256_ps512(carry_low), carry_high, 1);
-    x = _mm512_add_ps(carry, x);
-    _mm512_storeu_ps(&arr[i], x);
-    last_part = _mm512_extractf32x4_ps(x, 3);
-  }
-
-  for (i = i ? i : 3; i < n; i++)
-    arr[i] += arr[i - 3];
-}
-
-template <> void kernel_avx512<float, 4>(float *arr, int n) {
-  __m128 last_part = _mm_setzero_ps();
-  int i;
-  const __m512 ZERO_PS = _mm512_setzero_ps();
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512 x = _mm512_loadu_ps(&arr[i]);
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 4));
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 8));
-
-    x = _mm512_add_ps(_mm512_broadcast_f32x4(last_part), x);
-    _mm512_storeu_ps(&arr[i], x);
-    last_part = _mm512_extractf32x4_ps(x, 3);
-  }
-
-  for (i = i ? i : 4; i < n; i++)
-    arr[i] += arr[i - 4];
-}
-
-template <> void kernel_avx512<float, 5>(float *arr, int n) {
-  __m256 last_part = _mm256_setzero_ps();
-  int i;
-  const __m512 ZERO_PS = _mm512_setzero_ps();
-  const __m512i IDX =
-      _mm512_set_epi32(3, 7, 6, 5, 4, 3, 7, 6, 5, 4, 3, 7, 6, 5, 4, 3);
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512 x = _mm512_loadu_ps(&arr[i]);
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 5));
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 10));
-    const __m512 carry =
-        _mm512_permutexvar_ps(IDX, _mm512_castps256_ps512(last_part));
-    x = _mm512_add_ps(carry, x);
-    _mm512_storeu_ps(&arr[i], x);
-    last_part = _mm512_extractf32x8_ps(x, 1);
-  }
-
-  for (i = i ? i : 5; i < n; i++)
-    arr[i] += arr[i - 5];
-}
-
-template <> void kernel_avx512<float, 6>(float *arr, int n) {
-  __m256 last_part = _mm256_setzero_ps();
-  int i;
-  const __m512 ZERO_PS = _mm512_setzero_ps();
-  const __m512i IDX =
-      _mm512_set_epi32(5, 4, 3, 2, 7, 6, 5, 4, 3, 2, 7, 6, 5, 4, 3, 2);
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512 x = _mm512_loadu_ps(&arr[i]);
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 6));
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 12));
-    const __m512 carry =
-        _mm512_permutexvar_ps(IDX, _mm512_castps256_ps512(last_part));
-    x = _mm512_add_ps(carry, x);
-    _mm512_storeu_ps(&arr[i], x);
-    last_part = _mm512_extractf32x8_ps(x, 1);
-  }
-
-  for (i = i ? i : 6; i < n; i++)
-    arr[i] += arr[i - 6];
-}
-
-template <> void kernel_avx512<float, 7>(float *arr, int n) {
-  __m256 last_part = _mm256_setzero_ps();
-  int i;
-  const __m512 ZERO_PS = _mm512_setzero_ps();
-  const __m512i IDX =
-      _mm512_set_epi32(2, 1, 7, 6, 5, 4, 3, 2, 1, 7, 6, 5, 4, 3, 2, 1);
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512 x = _mm512_loadu_ps(&arr[i]);
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 7));
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 14));
-    const __m512 carry =
-        _mm512_permutexvar_ps(IDX, _mm512_castps256_ps512(last_part));
-    x = _mm512_add_ps(carry, x);
-    _mm512_storeu_ps(&arr[i], x);
-    last_part = _mm512_extractf32x8_ps(x, 1);
-  }
-
-  for (i = i ? i : 7; i < n; i++)
-    arr[i] += arr[i - 7];
-}
-
-template <> void kernel_avx512<float, 8>(float *arr, int n) {
-  __m256 last_part = _mm256_setzero_ps();
-  int i;
-  const __m512 ZERO_PS = _mm512_setzero_ps();
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512 x = _mm512_loadu_ps(&arr[i]);
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 8));
-    const __m512 carry =
-        _mm512_insertf32x8(_mm512_castps256_ps512(last_part), last_part, 1);
-    x = _mm512_add_ps(carry, x);
-    _mm512_storeu_ps(&arr[i], x);
-    last_part = _mm512_extractf32x8_ps(x, 1);
-  }
-
-  for (i = i ? i : 8; i < n; i++)
-    arr[i] += arr[i - 8];
-}
-
-template <> void kernel_avx512<float, 9>(float *arr, int n) {
-  __m512 last_x = _mm512_setzero_ps();
-  int i;
-  const __m512 ZERO_PS = _mm512_setzero_ps();
-  const __m512i IDX = _mm512_set_epi32(13, 12, 11, 10, 9, 8, 7, 15, 14, 13, 12,
-                                       11, 10, 9, 8, 7);
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512 x = _mm512_loadu_ps(&arr[i]);
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 9));
-    const __m512 carry = _mm512_permutexvar_ps(IDX, last_x);
-    x = _mm512_add_ps(carry, x);
-    _mm512_storeu_ps(&arr[i], x);
-    last_x = x;
-  }
-
-  for (i = i ? i : 9; i < n; i++)
-    arr[i] += arr[i - 9];
-}
-
-template <> void kernel_avx512<float, 10>(float *arr, int n) {
-  __m512 last_x = _mm512_setzero_ps();
-  int i;
-  const __m512 ZERO_PS = _mm512_setzero_ps();
-  const __m512i IDX =
-      _mm512_set_epi32(11, 10, 9, 8, 7, 6, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6);
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512 x = _mm512_loadu_ps(&arr[i]);
-    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 10));
-    const __m512 carry = _mm512_permutexvar_ps(IDX, last_x);
-    x = _mm512_add_ps(carry, x);
-    _mm512_storeu_ps(&arr[i], x);
-    last_x = x;
-  }
-
-  for (i = i ? i : 10; i < n; i++)
-    arr[i] += arr[i - 10];
-}
-
-template <> void kernel_avx512<uint32_t, 2>(uint32_t *arr, int n) {
-  uint32_t sum0 = 0, sum1 = 0;
-  int i;
-  const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512i x = _mm512_loadu_epi32(&arr[i]);
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 2));
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 4));
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 8));
-
-    const __m512i sum0_broadcasted = _mm512_set1_epi32(sum0);
-    const __m512i sum1_broadcasted = _mm512_set1_epi32(sum1);
-    x = _mm512_add_epi32(
-        _mm512_mask_blend_epi32(0xAAAA, sum0_broadcasted, sum1_broadcasted), x);
-    _mm512_storeu_epi32(&arr[i], x);
-
-    const __m128i last_part = _mm512_extracti32x4_epi32(x, 3);
-    sum0 = _mm_extract_epi32(last_part, 2);
-    sum1 = _mm_extract_epi32(last_part, 3);
-  }
-
-  for (i = i ? i : 2; i < n; i++)
-    arr[i] += arr[i - 2];
-}
-
-template <> void kernel_avx512<uint32_t, 3>(uint32_t *arr, int n) {
-  __m128i last_part = _mm_setzero_ps();
-  int i;
-  const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
-  const __m128i IDX0 = _mm_set_epi32(1, 3, 2, 1);
-  const __m128i IDX1 = _mm_set_epi32(2, 1, 3, 2);
-  const __m128i IDX2 = _mm_set_epi32(3, 2, 1, 3);
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512i x = _mm512_loadu_epi32(&arr[i]);
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 3));
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 6));
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 12));
-
-    const __m128i carry_low0 = _mm_permutevar_ps(last_part, IDX0);
-    const __m128i carry_low1 = _mm_permutevar_ps(last_part, IDX1);
-    const __m128i carry_high0 = _mm_permutevar_ps(last_part, IDX2);
-    const __m128i carry_high1 = carry_low0;
-    const __m256i carry_low =
-        _mm256_inserti32x4(_mm256_castsi128_si256(carry_low0), carry_low1, 1);
-    const __m256i carry_high =
-        _mm256_inserti32x4(_mm256_castsi128_si256(carry_high0), carry_high1, 1);
-    const __m512i carry =
-        _mm512_inserti32x8(_mm512_castsi256_si512(carry_low), carry_high, 1);
-    x = _mm512_add_epi32(carry, x);
-    _mm512_storeu_epi32(&arr[i], x);
-    last_part = _mm512_extracti32x4_epi32(x, 3);
-  }
-
-  for (i = i ? i : 3; i < n; i++)
-    arr[i] += arr[i - 3];
-}
-
-template <> void kernel_avx512<uint32_t, 4>(uint32_t *arr, int n) {
-  __m128i last_part = _mm_setzero_ps();
-  int i;
-  const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512i x = _mm512_loadu_epi32(&arr[i]);
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 4));
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 8));
-
-    x = _mm512_add_epi32(_mm512_broadcast_f32x4(last_part), x);
-    _mm512_storeu_epi32(&arr[i], x);
-    last_part = _mm512_extracti32x4_epi32(x, 3);
-  }
-
-  for (i = i ? i : 4; i < n; i++)
-    arr[i] += arr[i - 4];
-}
-
-template <> void kernel_avx512<uint32_t, 5>(uint32_t *arr, int n) {
-  __m256i last_part = _mm256_setzero_si256();
-  int i;
-  const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
-  const __m512i IDX =
-      _mm512_set_epi32(3, 7, 6, 5, 4, 3, 7, 6, 5, 4, 3, 7, 6, 5, 4, 3);
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512i x = _mm512_loadu_epi32(&arr[i]);
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 5));
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 10));
-    const __m512i carry =
-        _mm512_permutexvar_epi32(IDX, _mm512_castsi256_si512(last_part));
-    x = _mm512_add_epi32(carry, x);
-    _mm512_storeu_epi32(&arr[i], x);
-    last_part = _mm512_extracti32x8_epi32(x, 1);
-  }
-
-  for (i = i ? i : 5; i < n; i++)
-    arr[i] += arr[i - 5];
-}
-
-template <> void kernel_avx512<uint32_t, 6>(uint32_t *arr, int n) {
-  __m256i last_part = _mm256_setzero_si256();
-  int i;
-  const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
-  const __m512i IDX =
-      _mm512_set_epi32(5, 4, 3, 2, 7, 6, 5, 4, 3, 2, 7, 6, 5, 4, 3, 2);
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512i x = _mm512_loadu_epi32(&arr[i]);
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 6));
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 12));
-    const __m512i carry =
-        _mm512_permutexvar_epi32(IDX, _mm512_castsi256_si512(last_part));
-    x = _mm512_add_epi32(carry, x);
-    _mm512_storeu_epi32(&arr[i], x);
-    last_part = _mm512_extracti32x8_epi32(x, 1);
-  }
-
-  for (i = i ? i : 6; i < n; i++)
-    arr[i] += arr[i - 6];
-}
-
-template <> void kernel_avx512<uint32_t, 7>(uint32_t *arr, int n) {
-  __m256i last_part = _mm256_setzero_si256();
-  int i;
-  const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
-  const __m512i IDX =
-      _mm512_set_epi32(2, 1, 7, 6, 5, 4, 3, 2, 1, 7, 6, 5, 4, 3, 2, 1);
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512i x = _mm512_loadu_epi32(&arr[i]);
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 7));
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 14));
-    const __m512i carry =
-        _mm512_permutexvar_epi32(IDX, _mm512_castsi256_si512(last_part));
-    x = _mm512_add_epi32(carry, x);
-    _mm512_storeu_epi32(&arr[i], x);
-    last_part = _mm512_extracti32x8_epi32(x, 1);
-  }
-
-  for (i = i ? i : 7; i < n; i++)
-    arr[i] += arr[i - 7];
-}
-
-template <> void kernel_avx512<uint32_t, 8>(uint32_t *arr, int n) {
-  __m256i last_part = _mm256_setzero_si256();
-  int i;
-  const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
-  const __m512i IDX =
-      _mm512_set_epi32(2, 1, 7, 6, 5, 4, 3, 2, 1, 7, 6, 5, 4, 3, 2, 1);
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512i x = _mm512_loadu_epi32(&arr[i]);
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 8));
-    const __m512i carry =
-        _mm512_insertf32x8(_mm512_castsi256_si512(last_part), last_part, 1);
-    x = _mm512_add_epi32(carry, x);
-    _mm512_storeu_epi32(&arr[i], x);
-    last_part = _mm512_extracti32x8_epi32(x, 1);
-  }
-
-  for (i = i ? i : 8; i < n; i++)
-    arr[i] += arr[i - 8];
-}
-
-template <> void kernel_avx512<uint32_t, 9>(uint32_t *arr, int n) {
-  __m512i last_x = _mm512_setzero_epi32();
-  int i;
-  const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
-  const __m512i IDX = _mm512_set_epi32(13, 12, 11, 10, 9, 8, 7, 15, 14, 13, 12,
-                                       11, 10, 9, 8, 7);
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512i x = _mm512_loadu_epi32(&arr[i]);
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 9));
-    const __m512i carry = _mm512_permutexvar_epi32(IDX, last_x);
-    x = _mm512_add_epi32(carry, x);
-    _mm512_storeu_epi32(&arr[i], x);
-    last_x = x;
-  }
-
-  for (i = i ? i : 9; i < n; i++)
-    arr[i] += arr[i - 9];
-}
-
-template <> void kernel_avx512<uint32_t, 10>(uint32_t *arr, int n) {
-  __m512i last_x = _mm512_setzero_epi32();
-  int i;
-  const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
-  const __m512i IDX =
-      _mm512_set_epi32(11, 10, 9, 8, 7, 6, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6);
-  for (i = 0; i + 16 <= n; i += 16) {
-    __m512i x = _mm512_loadu_epi32(&arr[i]);
-    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 10));
-    const __m512i carry = _mm512_permutexvar_epi32(IDX, last_x);
-    x = _mm512_add_epi32(carry, x);
-    _mm512_storeu_epi32(&arr[i], x);
-    last_x = x;
-  }
-
-  for (i = i ? i : 10; i < n; i++)
-    arr[i] += arr[i - 10];
-}
+template void kernel_avx512<float, 2>(float *arr, int n);
+template void kernel_avx512<float, 3>(float *arr, int n);
+template void kernel_avx512<float, 4>(float *arr, int n);
+template void kernel_avx512<float, 5>(float *arr, int n);
+template void kernel_avx512<float, 6>(float *arr, int n);
+template void kernel_avx512<float, 7>(float *arr, int n);
+template void kernel_avx512<float, 8>(float *arr, int n);
+template void kernel_avx512<float, 9>(float *arr, int n);
+template void kernel_avx512<float, 10>(float *arr, int n);
+template void kernel_avx512<float, 11>(float *arr, int n);
+template void kernel_avx512<float, 12>(float *arr, int n);
+template void kernel_avx512<float, 13>(float *arr, int n);
+template void kernel_avx512<float, 14>(float *arr, int n);
+template void kernel_avx512<float, 15>(float *arr, int n);
+template void kernel_avx512<uint32_t, 2>(uint32_t *arr, int n);
+template void kernel_avx512<uint32_t, 3>(uint32_t *arr, int n);
+template void kernel_avx512<uint32_t, 4>(uint32_t *arr, int n);
+template void kernel_avx512<uint32_t, 5>(uint32_t *arr, int n);
+template void kernel_avx512<uint32_t, 6>(uint32_t *arr, int n);
+template void kernel_avx512<uint32_t, 7>(uint32_t *arr, int n);
+template void kernel_avx512<uint32_t, 8>(uint32_t *arr, int n);
+template void kernel_avx512<uint32_t, 9>(uint32_t *arr, int n);
+template void kernel_avx512<uint32_t, 10>(uint32_t *arr, int n);
+template void kernel_avx512<uint32_t, 11>(uint32_t *arr, int n);
+template void kernel_avx512<uint32_t, 12>(uint32_t *arr, int n);
+template void kernel_avx512<uint32_t, 13>(uint32_t *arr, int n);
+template void kernel_avx512<uint32_t, 14>(uint32_t *arr, int n);
+template void kernel_avx512<uint32_t, 15>(uint32_t *arr, int n);
