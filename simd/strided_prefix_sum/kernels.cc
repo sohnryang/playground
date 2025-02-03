@@ -18,6 +18,7 @@ template void kernel_scalar<float, 6>(float *arr, int n);
 template void kernel_scalar<float, 7>(float *arr, int n);
 template void kernel_scalar<float, 8>(float *arr, int n);
 template void kernel_scalar<float, 9>(float *arr, int n);
+template void kernel_scalar<float, 10>(float *arr, int n);
 template void kernel_scalar<uint32_t, 2>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 3>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 4>(uint32_t *arr, int n);
@@ -26,6 +27,7 @@ template void kernel_scalar<uint32_t, 6>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 7>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 8>(uint32_t *arr, int n);
 template void kernel_scalar<uint32_t, 9>(uint32_t *arr, int n);
+template void kernel_scalar<uint32_t, 10>(uint32_t *arr, int n);
 
 template <typename T, int S> void kernel_autovec(T *arr, int n) {
 #pragma clang loop vectorize(enable)
@@ -37,10 +39,12 @@ template void kernel_autovec<float, 2>(float *arr, int n);
 template void kernel_autovec<float, 4>(float *arr, int n);
 template void kernel_autovec<float, 6>(float *arr, int n);
 template void kernel_autovec<float, 8>(float *arr, int n);
+template void kernel_autovec<float, 10>(float *arr, int n);
 template void kernel_autovec<uint32_t, 2>(uint32_t *arr, int n);
 template void kernel_autovec<uint32_t, 4>(uint32_t *arr, int n);
 template void kernel_autovec<uint32_t, 6>(uint32_t *arr, int n);
 template void kernel_autovec<uint32_t, 8>(uint32_t *arr, int n);
+template void kernel_autovec<uint32_t, 10>(uint32_t *arr, int n);
 
 template <> void kernel_avx512<float, 2>(float *arr, int n) {
   float sum0 = 0, sum1 = 0;
@@ -215,6 +219,25 @@ template <> void kernel_avx512<float, 9>(float *arr, int n) {
 
   for (i = i ? i : 9; i < n; i++)
     arr[i] += arr[i - 9];
+}
+
+template <> void kernel_avx512<float, 10>(float *arr, int n) {
+  __m512 last_x = _mm512_setzero_ps();
+  int i;
+  const __m512 ZERO_PS = _mm512_setzero_ps();
+  const __m512i IDX =
+      _mm512_set_epi32(11, 10, 9, 8, 7, 6, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6);
+  for (i = 0; i + 16 <= n; i += 16) {
+    __m512 x = _mm512_loadu_ps(&arr[i]);
+    x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 10));
+    const __m512 carry = _mm512_permutexvar_ps(IDX, last_x);
+    x = _mm512_add_ps(carry, x);
+    _mm512_storeu_ps(&arr[i], x);
+    last_x = x;
+  }
+
+  for (i = i ? i : 10; i < n; i++)
+    arr[i] += arr[i - 10];
 }
 
 template <> void kernel_avx512<uint32_t, 2>(uint32_t *arr, int n) {
@@ -392,4 +415,23 @@ template <> void kernel_avx512<uint32_t, 9>(uint32_t *arr, int n) {
 
   for (i = i ? i : 9; i < n; i++)
     arr[i] += arr[i - 9];
+}
+
+template <> void kernel_avx512<uint32_t, 10>(uint32_t *arr, int n) {
+  __m512i last_x = _mm512_setzero_epi32();
+  int i;
+  const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
+  const __m512i IDX =
+      _mm512_set_epi32(11, 10, 9, 8, 7, 6, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6);
+  for (i = 0; i + 16 <= n; i += 16) {
+    __m512i x = _mm512_loadu_epi32(&arr[i]);
+    x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 10));
+    const __m512i carry = _mm512_permutexvar_epi32(IDX, last_x);
+    x = _mm512_add_epi32(carry, x);
+    _mm512_storeu_epi32(&arr[i], x);
+    last_x = x;
+  }
+
+  for (i = i ? i : 10; i < n; i++)
+    arr[i] += arr[i - 10];
 }

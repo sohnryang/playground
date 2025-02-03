@@ -32,6 +32,7 @@ using Implementations =
           std::tuple<float, std::integral_constant<int, 7>>,
           std::tuple<float, std::integral_constant<int, 8>>,
           std::tuple<float, std::integral_constant<int, 9>>,
+          std::tuple<float, std::integral_constant<int, 10>>,
           std::tuple<uint32_t, std::integral_constant<int, 2>>,
           std::tuple<uint32_t, std::integral_constant<int, 3>>,
           std::tuple<uint32_t, std::integral_constant<int, 4>>,
@@ -39,7 +40,8 @@ using Implementations =
           std::tuple<uint32_t, std::integral_constant<int, 6>>,
           std::tuple<uint32_t, std::integral_constant<int, 7>>,
           std::tuple<uint32_t, std::integral_constant<int, 8>>,
-          std::tuple<uint32_t, std::integral_constant<int, 9>>>;
+          std::tuple<uint32_t, std::integral_constant<int, 9>>,
+          std::tuple<uint32_t, std::integral_constant<int, 10>>>;
 TYPED_TEST_SUITE(StridedPsumTest, Implementations);
 
 TYPED_TEST(StridedPsumTest, Ones) {
