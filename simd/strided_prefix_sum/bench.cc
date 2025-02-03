@@ -24,6 +24,7 @@ static void BM(benchmark::State &state) {
     benchmark::ClobberMemory();
   }
   delete[] arr;
+  state.SetItemsProcessed(state.iterations() * state.range());
 }
 BENCHMARK(BM<float, kernel_scalar<float, 2>>)
     ->RangeMultiplier(MULTIPLIER)
