@@ -84,7 +84,7 @@ template <typename T, int S> void kernel_avx512(T *arr, int n) {
         x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - S));
         x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 2 * S));
         x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 4 * S));
-      } else if (S < 8) {
+      } else if constexpr (S < 8) {
         x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - S));
         x = _mm512_add_ps(x, _mm512_alignr_epi32(x, ZERO_PS, 16 - 2 * S));
       } else {
@@ -95,7 +95,7 @@ template <typename T, int S> void kernel_avx512(T *arr, int n) {
       _mm512_storeu_ps(&arr[i], x);
       last_x = x;
     }
-  } else if (std::is_same<T, uint32_t>::value) {
+  } else if constexpr (std::is_same<T, uint32_t>::value) {
     __m512i last_x = _mm512_setzero_epi32();
     const __m512i ZERO_EPI32 = _mm512_setzero_epi32();
     for (; i + 16 <= n; i += 16) {
@@ -104,7 +104,7 @@ template <typename T, int S> void kernel_avx512(T *arr, int n) {
         x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - S));
         x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 2 * S));
         x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 4 * S));
-      } else if (S < 8) {
+      } else if constexpr (S < 8) {
         x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - S));
         x = _mm512_add_epi32(x, _mm512_alignr_epi32(x, ZERO_EPI32, 16 - 2 * S));
       } else {
